@@ -1,6 +1,20 @@
 # TerraNova
 
-스마트팜 제어 애플리케이션입니다. 밭을 그리드로 보여 주고, 정해진 시각에 알람을 보내며, 사람이 확인하면 물을 줍니다. 아직 실제 장비는 없고 MQTT 시뮬레이터로 로컬에서 실행하며, 배포는 하지 않습니다.
+스마트팜 제어 애플리케이션입니다. 밭을 그리드로 보여 주고, 정해진 시각에 알람을 보내며, 사람이 확인하면 물을 줍니다.
+
+> **프로젝트 상태:** 개발 중입니다. 실제 장비 없이 MQTT 시뮬레이터로 로컬에서 실행하며, 배포는 하지 않습니다.
+
+## 기술 스택
+
+![Skills](https://skillicons.dev/icons?i=nextjs,react,ts,bun,postgres)
+
+| 구분 | 사용 기술 |
+|---|---|
+| 웹 | Next.js 16, React 19, Chakra UI 3, next-intl, react-icons |
+| 백엔드 | Bun, Socket.IO, Aedes(MQTT 브로커), Better Auth |
+| 데이터 | PGlite, Drizzle ORM |
+| 장비 통신 | MQTT (시뮬레이터로 대체) |
+| 공통 | TypeScript 7, Bun workspaces, Bun test, Playwright |
 
 ## 실행
 
