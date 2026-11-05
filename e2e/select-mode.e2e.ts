@@ -44,13 +44,29 @@ test.describe("selecting without a mouse", () => {
       await expect(page.locator("[data-selection-count]")).toHaveCount(0);
     });
 
-    test("scrolling a page by touch doesn't select anything", async ({ page, context }) => {
+    test("dragging a finger across fields never selects them, and scrolling isn't blocked", async ({ page, context }) => {
       const farm = new Farm(page);
       await farm.open();
+      await page.evaluate(() => {
+        (window as any).__pointers = [];
+        document.addEventListener("pointerdown", (event) => (window as any).__pointers.push(event.pointerType));
+      });
+
+      const card = (await farm.card("zone-a").boundingBox())!;
+      const point = (y: number) => ({ x: card.x + card.width / 2, y });
       const cdp = await context.newCDPSession(page);
-      await cdp.send("Input.synthesizeScrollGesture", { x: 200, y: 600, yDistance: -300, gestureSourceType: "touch" });
-      await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(100);
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point(card.y + 300)] });
+      for (let step = 1; step <= 6; step++) {
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [point(card.y + 300 - step * 40)] });
+      }
+      await expect(page.locator("[data-marquee]")).toHaveCount(0);
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+
+      // Proves the gesture reached the page as touch, so "nothing selected" means something.
+      expect(await page.evaluate(() => (window as any).__pointers)).toContain("touch");
       await expect(page.locator("[data-selected]")).toHaveCount(0);
+      await expect(page.locator("[data-selection-count]")).toHaveCount(0);
+      await expect(farm.card("zone-a")).not.toHaveCSS("touch-action", "none");
     });
   });
 
