@@ -22,10 +22,14 @@ const REQUEST_TIMEOUT_MS = 10_000;
 type FarmSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 export type Connection = "connecting" | "connected" | "disconnected";
 
-/** Same host as the page: the session cookie is only sent to the host that set it. */
+/**
+ * In development the backend is a separate port on the same host, and the session cookie only
+ * goes to the host that set it. In network mode everything comes through one address.
+ */
 const socketUrl = () =>
-  process.env.NEXT_PUBLIC_SOCKET_URL ??
-  `${window.location.protocol}//${window.location.hostname}:${DEFAULT_SOCKET_PORT}`;
+  window.location.port === "3000"
+    ? `${window.location.protocol}//${window.location.hostname}:${DEFAULT_SOCKET_PORT}`
+    : window.location.origin;
 
 export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: WateringCycle) => void) {
   const socketRef = useRef<FarmSocket | null>(null);

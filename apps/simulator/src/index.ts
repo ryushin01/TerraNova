@@ -6,7 +6,9 @@ const pumpFailRate = Number(process.env.SIM_PUMP_FAIL_RATE ?? 0);
 
 const soilDryRate = process.env.SIM_SOIL_DRY_RATE ? Number(process.env.SIM_SOIL_DRY_RATE) : undefined;
 
-const simulator = startSimulator({ brokerUrl, pumpFailRate, soilDryRate });
+const initialSoil = process.env.SIM_INITIAL_SOIL ? Number(process.env.SIM_INITIAL_SOIL) : undefined;
+
+const simulator = startSimulator({ brokerUrl, pumpFailRate, soilDryRate, initialSoil });
 console.log(`[simulator] ${ZONE_IDS.length} zones -> ${brokerUrl}`);
 
 const shutdown = async () => {

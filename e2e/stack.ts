@@ -1,0 +1,84 @@
+import { spawn, type ChildProcess } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const BACKEND = "http://127.0.0.1:4000";
+
+type Env = Record<string, string>;
+
+function run(dir: string, env: Env): ChildProcess {
+  return spawn("bun", ["src/index.ts"], {
+    cwd: join(root, dir),
+    env: { ...process.env, ...env },
+    stdio: "ignore",
+  });
+}
+
+function stop(child: ChildProcess | null): Promise<void> {
+  if (!child || child.exitCode !== null) return Promise.resolve();
+  return new Promise((resolve) => {
+    child.once("exit", () => resolve());
+    child.kill("SIGTERM");
+  });
+}
+
+async function backendUp(): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try {
+      await fetch(`${BACKEND}/health-check`);
+      return;
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+  throw new Error("backend did not start");
+}
+
+/** A real backend and simulator using a throwaway database, for one spec file. */
+export class Stack {
+  private readonly dataRoot = mkdtempSync(join(tmpdir(), "terranova-e2e-"));
+  private server: ChildProcess | null = null;
+  private simulator: ChildProcess | null = null;
+
+  constructor(
+    private serverEnv: Env = {},
+    private simulatorEnv: Env = {},
+  ) {}
+
+  async startServer(env: Env = this.serverEnv): Promise<void> {
+    this.serverEnv = env;
+    this.server = run("apps/server", { DATA_DIR: join(this.dataRoot, "db"), WATERING_TIMES: "", ...env });
+    await backendUp();
+  }
+
+  stopServer = () => stop(this.server);
+
+  startSimulator(env: Env = this.simulatorEnv): void {
+    this.simulator = run("apps/simulator", env);
+  }
+
+  stopSimulator = () => stop(this.simulator);
+
+  async restartServer(env?: Env): Promise<void> {
+    await this.stopServer();
+    await this.startServer(env);
+  }
+
+  async start(): Promise<void> {
+    await this.startServer();
+    this.startSimulator();
+  }
+
+  async stop(): Promise<void> {
+    await this.stopSimulator();
+    await this.stopServer();
+    rmSync(this.dataRoot, { recursive: true, force: true });
+  }
+
+  triggerAlarm(zone: string): Promise<Response> {
+    return fetch(`${BACKEND}/dev/alarms/${zone}`, { method: "POST" });
+  }
+}

@@ -12,7 +12,14 @@ const env = process.env;
 const webPort = env.WEB_PORT ?? "3000";
 
 const dataDir = env.DATA_DIR ?? join(import.meta.dir, "../.data/pglite");
-const webOrigins = [`http://localhost:${webPort}`, `http://127.0.0.1:${webPort}`];
+// PUBLIC_ORIGIN is set in network mode: it makes session cookies HTTPS-only.
+const publicOrigin = env.PUBLIC_ORIGIN;
+const webOrigins = [
+  ...(publicOrigin ? [publicOrigin] : []),
+  `http://localhost:${webPort}`,
+  `http://127.0.0.1:${webPort}`,
+  ...(env.EXTRA_ORIGINS?.split(",") ?? []),
+];
 
 /** Keeps the session signing key next to the data, created once and readable only by this user. */
 function loadAuthSecret(): string {

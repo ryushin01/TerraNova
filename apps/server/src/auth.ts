@@ -27,6 +27,12 @@ export function createAuth({ db, baseURL, secret, trustedOrigins }: AuthOptions)
       provider: "pg",
       schema: { user, session, account, verification },
     }),
+    // Applies when NODE_ENV is production, which is how the network mode runs.
+    rateLimit: {
+      window: 60,
+      max: 600,
+      customRules: { "/sign-in/email": { window: 60, max: 5 } },
+    },
     // These accounts can operate pumps, so only an admin can create one.
     emailAndPassword: { enabled: true, disableSignUp: true },
     hooks: {

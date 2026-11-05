@@ -15,6 +15,7 @@ export interface SimulatorOptions {
   telemetryMs?: number;
   pumpFailRate?: number;
   soilDryRate?: number;
+  initialSoil?: number;
 }
 
 const statusPayload = (zoneId: string, online: boolean) =>
@@ -30,9 +31,10 @@ export function startSimulator({
   telemetryMs = 2000,
   pumpFailRate = 0,
   soilDryRate,
+  initialSoil,
 }: SimulatorOptions) {
   const zones = ZONE_IDS.map((zoneId) => {
-    const device = new ZoneDevice({ zoneId, pumpFailRate, soilDryRate });
+    const device = new ZoneDevice({ zoneId, pumpFailRate, soilDryRate, initialSoil });
     const client = mqtt.connect(brokerUrl, {
       clientId: `terranova-sim-${zoneId}`,
       // Old readings are worthless after an outage, and queueing them grows without limit.

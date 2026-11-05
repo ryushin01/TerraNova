@@ -21,6 +21,8 @@ export interface DeviceOptions {
   random?: () => number;
   /** Soil moisture lost per second while not watering. */
   soilDryRate?: number;
+  /** Starting soil moisture. Random when not set; browser tests fix it to be repeatable. */
+  initialSoil?: number;
 }
 
 /** One simulated zone. Pure apart from the injected clock values and random source. */
@@ -36,14 +38,14 @@ export class ZoneDevice {
   private pumpRun: { commandId: string; endsAt: number } | null = null;
   private readonly lastAcks = new Map<string, CommandAck>();
 
-  constructor({ zoneId, pumpFailRate = 0, random = Math.random, soilDryRate = 0.02 }: DeviceOptions) {
+  constructor({ zoneId, pumpFailRate = 0, random = Math.random, soilDryRate = 0.02, initialSoil }: DeviceOptions) {
     this.soilDryRate = soilDryRate;
     this.zoneId = zoneId;
     this.pumpFailRate = pumpFailRate;
     this.random = random;
     this.temperatureC = 22 + random() * 6;
     this.humidityPct = 50 + random() * 20;
-    this.soilMoisturePct = 35 + random() * 30;
+    this.soilMoisturePct = initialSoil ?? 35 + random() * 30;
   }
 
   handleCommand(actuator: Actuator, command: Command, nowMs: number): CommandAck[] {

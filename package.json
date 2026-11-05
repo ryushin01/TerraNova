@@ -4,14 +4,20 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "e2e"
   ],
   "scripts": {
     "dev": "bun run --filter '*' dev",
     "test": "bun test",
     "typecheck": "bun run --filter '*' typecheck",
     "build": "bun run --filter '@terranova/web' build",
-    "demo": "ALARM_EVERY_MIN=1 WATERING_DURATION_SEC=15 SIM_SOIL_DRY_RATE=0.3 bun run dev"
+    "demo": "ALARM_EVERY_MIN=1 WATERING_DURATION_SEC=15 SIM_SOIL_DRY_RATE=0.3 bun run dev",
+    "test:e2e": "bun run --filter @terranova/e2e test:e2e",
+    "memory:server": "bun e2e/memory/server.ts",
+    "memory:browser": "bun run --filter @terranova/e2e memory:browser",
+    "lan": "bun run build && bun apps/lan/src/index.ts",
+    "test:lan": "bun run --filter @terranova/e2e test:lan"
   },
   "devDependencies": {
     "@types/bun": "^1.4.4",

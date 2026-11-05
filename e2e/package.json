@@ -1,0 +1,20 @@
+{
+  "name": "@terranova/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "playwright test --project=e2e",
+    "memory:browser": "TERRANOVA_PRODUCTION=1 playwright test --project=memory",
+    "typecheck": "tsc --noEmit",
+    "test:lan": "playwright test --config=playwright.lan.config.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.6",
+    "socket.io-client": "^4.8.4"
+  },
+  "dependencies": {
+    "@terranova/shared": "workspace:*"
+  }
+}
