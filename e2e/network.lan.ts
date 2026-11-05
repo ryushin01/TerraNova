@@ -85,6 +85,10 @@ test("a phone signs in, sees live data, and waters a field", async ({ page, cont
 
   const scroll = await page.evaluate(() => ({ inner: innerWidth, width: document.documentElement.scrollWidth }));
   expect(scroll.width).toBe(scroll.inner);
+
+  await page.goto("/ko/history");
+  await expect(page.locator('[data-history-row="watering_start"]')).toContainText(ADMIN.name);
+  await expect(page.locator('[data-history-row="watering_start"]')).toContainText("A", { useInnerText: true });
 });
 
 test("the live connection also works when WebSockets are unavailable", async ({ context, page }) => {

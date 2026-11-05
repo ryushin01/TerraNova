@@ -118,7 +118,8 @@
     "users": "사용자 관리",
     "dashboard": "구역 현황",
     "signOut": "로그아웃",
-    "menu": "계정 메뉴"
+    "menu": "계정 메뉴",
+    "history": "제어 이력"
   },
   "roles": {
     "admin": "관리자",
@@ -186,5 +187,63 @@
     "failed": "저장하지 못했어요. 다시 시도해 주세요.",
     "cancel": "취소",
     "save": "저장"
+  },
+  "history": {
+    "title": "제어 이력",
+    "forbidden": "관리자와 작업자만 볼 수 있어요.",
+    "failed": "이력을 불러오지 못했어요. 다시 시도해 주세요.",
+    "loading": "불러오는 중",
+    "empty": "조건에 맞는 기록이 없어요.",
+    "refresh": "새로고침",
+    "more": "더 보기",
+    "filterZone": "구역으로 거르기",
+    "filterAction": "동작으로 거르기",
+    "allZones": "모든 구역",
+    "allActions": "모든 동작",
+    "time": "시각",
+    "actor": "사용자",
+    "zone": "구역",
+    "action": "동작",
+    "result": "결과",
+    "actions": {
+      "alarm_confirm": "알람 확인",
+      "watering_start": "물 주기",
+      "pump_stop": "급수 중지",
+      "ventOn": "환기 켜기",
+      "ventOff": "환기 끄기",
+      "lightOn": "조명 켜기",
+      "lightOff": "조명 끄기",
+      "zones_move": "{section} 섹션으로 이동",
+      "crop_add": "{name} 작물 추가",
+      "crop_remove": "{name} 작물 삭제",
+      "alarm_times": "{section} 알람 시간 변경: {times}",
+      "noTimes": "없음"
+    },
+    "filters": {
+      "alarm_confirm": "알람 확인",
+      "watering_start": "물 주기",
+      "pump_stop": "급수 중지",
+      "actuator_set": "환기, 조명",
+      "zones_move": "구역 이동",
+      "crop_add": "작물 추가",
+      "crop_remove": "작물 삭제",
+      "alarm_times": "알람 시간 변경"
+    },
+    "results": {
+      "ok": "성공",
+      "sent": "명령 전송",
+      "skipped": "건너뜀",
+      "failed": "실패",
+      "forbidden": "권한 없음",
+      "already_handled": "이미 처리됨",
+      "invalid": "잘못된 요청",
+      "not_found": "대상 없음",
+      "not_empty": "구역 남아 있음",
+      "duplicate": "중복",
+      "zone_offline": "장비 오프라인",
+      "no_ack": "응답 없음",
+      "device_failed": "장비 실패",
+      "internal": "오류"
+    }
   }
 }

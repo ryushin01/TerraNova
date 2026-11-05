@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { ZONE_IDS } from "@terranova/shared";
-import type { AddCropResult, ClientToServerEvents, ConfirmResult, ControlResult, Crop, FarmSnapshot, ServerToClientEvents, WateringCycle } from "@terranova/shared";
+import type { AddCropResult, ClientToServerEvents, ConfirmResult, ControlResult, Crop, HistoryEntry, HistoryPage, FarmSnapshot, ServerToClientEvents, WateringCycle } from "@terranova/shared";
 import { io, type Socket } from "socket.io-client";
 import { startSimulator } from "../../simulator/src/simulator";
 import { startApp } from "../src/app";
@@ -312,6 +312,110 @@ describe("access", () => {
     await post("/api/auth/sign-out", {}, { cookie });
     await until(() => !client.connected);
     client.close();
+  });
+});
+
+describe("control history", () => {
+  const read = (cookie: string, query = "") =>
+    fetch(`${BASE}/api/history${query}`, { headers: { origin: ORIGIN, cookie } });
+  const entries = async (query = ""): Promise<HistoryEntry[]> =>
+    ((await (await read(operatorCookie, query)).json()) as HistoryPage).entries;
+
+  /** Records are written on the side, so they can take a moment to appear. */
+  async function firstEntry(query: string, match: (entry: HistoryEntry) => boolean): Promise<HistoryEntry> {
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const found = (await entries(query)).find(match);
+      if (found) return found;
+      await Bun.sleep(20);
+    }
+    throw new Error(`no matching history entry for ${query}`);
+  }
+
+  test("device control records the person, the zone and what the device said", async () => {
+    expect(await new Promise((r) => socket.emit("actuator:set", "zone-d", "light", true, r))).toEqual({ ok: true });
+    const entry = await firstEntry("?action=actuator_set&zone=zone-d", (e) => e.detail.actuator === "light");
+    expect(entry).toMatchObject({
+      actorName: "Operator",
+      actorRole: "operator",
+      zoneId: "zone-d",
+      detail: { actuator: "light", on: true },
+      result: "ok",
+    });
+    await new Promise((r) => socket.emit("actuator:set", "zone-d", "light", false, r));
+  });
+
+  test("watering, stopping, moving and crop changes are all recorded", async () => {
+    await new Promise((r) => socket.emit("watering:start", "zone-d", r));
+    await new Promise((r) => socket.emit("pump:stop", "zone-d", r));
+    expect((await firstEntry("?action=watering_start&zone=zone-d", () => true)).result).toBe("sent");
+    expect((await firstEntry("?action=pump_stop&zone=zone-d", () => true)).result).toBe("ok");
+
+    const added = await new Promise<AddCropResult>((r) => socket.emit("crop:add", "감자", "potato", r));
+    if (!added.ok) throw new Error(added.error);
+    await new Promise((r) => socket.emit("crop:schedule", added.crop.id, ["06:00"], r));
+    await new Promise((r) => socket.emit("zones:move", ["zone-c", "zone-d"], added.crop.id, r));
+    await firstEntry("?action=zones_move&zone=zone-c", (e) => e.detail.crop?.name === "감자");
+    await firstEntry("?action=zones_move&zone=zone-d", (e) => e.detail.crop?.name === "감자");
+    await new Promise((r) => socket.emit("zones:move", ["zone-c", "zone-d"], "rice", r));
+    await new Promise((r) => socket.emit("crop:remove", added.crop.id, r));
+
+    expect((await firstEntry("?action=crop_add", (e) => e.detail.crop?.name === "감자")).result).toBe("ok");
+    const times = await firstEntry("?action=alarm_times", (e) => e.detail.crop?.name === "감자");
+    expect(times.detail.times).toEqual(["06:00"]);
+    // The name survives the crop being deleted.
+    expect((await firstEntry("?action=crop_remove", (e) => e.detail.crop?.name === "감자")).result).toBe("ok");
+  });
+
+  test("refused attempts are recorded too, and failures keep their reason", async () => {
+    const admin = await signIn("admin@terranova.test");
+    await post("/api/auth/admin/create-user", { name: "Refused", email: "refused@terranova.test", password: PASSWORD, role: "viewer" }, { cookie: admin });
+    const viewer = connect(await signIn("refused@terranova.test"));
+    await until(() => viewer.connected);
+    await new Promise((r) => viewer.emit("pump:stop", "zone-a", r));
+    viewer.close();
+    expect(await firstEntry("?action=pump_stop&zone=zone-a", (e) => e.actorName === "Refused")).toMatchObject({
+      actorRole: "viewer",
+      result: "forbidden",
+    });
+
+    await new Promise((r) => socket.emit("crop:remove", "bellflower", r));
+    expect((await firstEntry("?action=crop_remove", (e) => e.detail.crop?.id === "bellflower")).result).toBe("not_empty");
+  });
+
+  test("records outlive the account", async () => {
+    const admin = await signIn("admin@terranova.test");
+    const made = await post("/api/auth/admin/create-user", { name: "Temp Worker", email: "tempworker@terranova.test", password: PASSWORD, role: "operator" }, { cookie: admin });
+    const userId = ((await made.json()) as { user: { id: string } }).user.id;
+    const worker = connect(await signIn("tempworker@terranova.test"));
+    await until(() => worker.connected);
+    await new Promise((r) => worker.emit("actuator:set", "zone-e", "vent", true, r));
+    worker.close();
+    await firstEntry("?action=actuator_set&zone=zone-e", (e) => e.actorName === "Temp Worker");
+
+    expect((await post("/api/auth/admin/remove-user", { userId }, { cookie: admin })).status).toBe(200);
+    await firstEntry("?action=actuator_set&zone=zone-e", (e) => e.actorName === "Temp Worker");
+  });
+
+  test("only admins and operators can read it, and bad queries are refused", async () => {
+    expect((await read("")).status).toBe(401);
+    expect((await read("better-auth.session_token=forged.value")).status).toBe(401);
+    expect((await read(await signIn("viewer@terranova.test"))).status).toBe(403);
+    expect((await read(operatorCookie)).status).toBe(200);
+    expect((await read(await signIn("admin@terranova.test"))).status).toBe(200);
+    expect((await fetch(`${BASE}/api/history`, { method: "POST", headers: { origin: ORIGIN, cookie: operatorCookie } })).status).toBe(405);
+
+    for (const query of ["?limit=0", "?limit=101", "?limit=x", "?before=-1", "?before=1e99", "?zone=nope", "?action=nope", "?zone=%27%20OR%201=1"]) {
+      expect((await read(operatorCookie, query)).status, query).toBe(400);
+    }
+  });
+
+  test("pages hold the requested size and report where to continue", async () => {
+    const page = (await (await read(operatorCookie, "?limit=2")).json()) as HistoryPage;
+    expect(page.entries).toHaveLength(2);
+    expect(page.nextBefore).toBe(page.entries[1]!.id);
+    expect(page.timeZone).toBe("Asia/Seoul");
+    const next = (await (await read(operatorCookie, `?limit=2&before=${page.nextBefore}`)).json()) as HistoryPage;
+    expect(next.entries[0]!.id).toBeLessThan(page.nextBefore!);
   });
 });
 

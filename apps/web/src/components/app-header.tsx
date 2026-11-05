@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Flex, Heading, HStack, Link as ChakraLink, Menu, Portal } from "@chakra-ui/react";
+import { canControl } from "@terranova/shared";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -43,6 +44,11 @@ export function AppHeader({ title }: { title: string }) {
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/">{t("dashboard")}</Link>
                   </Menu.Item>
+                  {canControl(session.user.role) && (
+                    <Menu.Item value="history" asChild>
+                      <Link href="/history">{t("history")}</Link>
+                    </Menu.Item>
+                  )}
                   {isAdmin && (
                     <Menu.Item value="users" asChild>
                       <Link href="/users">{t("users")}</Link>

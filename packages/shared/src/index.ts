@@ -239,6 +239,48 @@ export function isManualActuator(value: unknown): value is ManualActuator {
 export type ControlError = "invalid" | "forbidden" | "zone_offline" | "no_ack" | "device_failed" | "internal";
 export type ControlResult = { ok: true } | { ok: false; error: ControlError };
 
+export const HISTORY_ACTIONS = [
+  "alarm_confirm",
+  "watering_start",
+  "pump_stop",
+  "actuator_set",
+  "zones_move",
+  "crop_add",
+  "crop_remove",
+  "alarm_times",
+] as const;
+export type HistoryAction = (typeof HISTORY_ACTIONS)[number];
+
+export function isHistoryAction(value: unknown): value is HistoryAction {
+  return (HISTORY_ACTIONS as readonly unknown[]).includes(value);
+}
+
+export interface HistoryDetail {
+  actuator?: ManualActuator;
+  on?: boolean;
+  crop?: { id: string; name: string };
+  times?: string[];
+}
+
+export interface HistoryEntry {
+  id: number;
+  at: string;
+  actorName: string;
+  actorRole: string;
+  action: HistoryAction;
+  zoneId: string | null;
+  detail: HistoryDetail;
+  result: string;
+  reason: string | null;
+}
+
+export interface HistoryPage {
+  entries: HistoryEntry[];
+  /** Pass as `before` to get the next, older page. Null when there are no more. */
+  nextBefore: number | null;
+  timeZone: string;
+}
+
 export const ROLE_NAMES = ["admin", "operator", "viewer"] as const;
 export type RoleName = (typeof ROLE_NAMES)[number];
 

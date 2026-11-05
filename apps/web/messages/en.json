@@ -118,7 +118,8 @@
     "users": "Users",
     "dashboard": "Zones",
     "signOut": "Sign out",
-    "menu": "Account menu"
+    "menu": "Account menu",
+    "history": "Control history"
   },
   "roles": {
     "admin": "Admin",
@@ -186,5 +187,63 @@
     "failed": "Couldn't save. Please try again.",
     "cancel": "Cancel",
     "save": "Save"
+  },
+  "history": {
+    "title": "Control history",
+    "forbidden": "Only admins and operators can view this page.",
+    "failed": "Couldn't load the history. Please try again.",
+    "loading": "Loading",
+    "empty": "No records match.",
+    "refresh": "Refresh",
+    "more": "Load more",
+    "filterZone": "Filter by zone",
+    "filterAction": "Filter by action",
+    "allZones": "All zones",
+    "allActions": "All actions",
+    "time": "Time",
+    "actor": "User",
+    "zone": "Zone",
+    "action": "Action",
+    "result": "Result",
+    "actions": {
+      "alarm_confirm": "Confirm alarm",
+      "watering_start": "Water now",
+      "pump_stop": "Stop watering",
+      "ventOn": "Turn ventilation on",
+      "ventOff": "Turn ventilation off",
+      "lightOn": "Turn lighting on",
+      "lightOff": "Turn lighting off",
+      "zones_move": "Move to {section}",
+      "crop_add": "Add crop {name}",
+      "crop_remove": "Remove crop {name}",
+      "alarm_times": "Change {section} alarm times: {times}",
+      "noTimes": "none"
+    },
+    "filters": {
+      "alarm_confirm": "Confirm alarm",
+      "watering_start": "Water now",
+      "pump_stop": "Stop watering",
+      "actuator_set": "Ventilation, lighting",
+      "zones_move": "Move zone",
+      "crop_add": "Add crop",
+      "crop_remove": "Remove crop",
+      "alarm_times": "Change alarm times"
+    },
+    "results": {
+      "ok": "Success",
+      "sent": "Command sent",
+      "skipped": "Skipped",
+      "failed": "Failed",
+      "forbidden": "Not allowed",
+      "already_handled": "Already handled",
+      "invalid": "Invalid request",
+      "not_found": "Not found",
+      "not_empty": "Still has zones",
+      "duplicate": "Duplicate",
+      "zone_offline": "Device offline",
+      "no_ack": "No response",
+      "device_failed": "Device failed",
+      "internal": "Error"
+    }
   }
 }

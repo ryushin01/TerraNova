@@ -2,15 +2,20 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import {
   ZONE_IDS,
   canControl,
+  isHistoryAction,
   isManualActuator,
   isZoneId,
   parseAck,
   parseTelemetry,
   parseZoneStatus,
   topics,
+  normalizeAlarmTimes,
   type AddCropResult,
   type ClientToServerEvents,
+  type ConfirmResult,
   type ControlResult,
+  type HistoryAction,
+  type HistoryPage,
   type RemoveCropResult,
   type ServerToClientEvents,
 } from "@terranova/shared";
@@ -22,6 +27,7 @@ import { MIN_PASSWORD_LENGTH, type Auth } from "./auth";
 import type { Database } from "./db";
 import { user } from "./db/schema";
 import { DeviceControls } from "./controls";
+import { ControlHistory, MAX_HISTORY_LIMIT, outcomeOf, type Actor, type HistoryEvent } from "./history";
 import { ZoneSections } from "./sections";
 import { WateringService, type WateringConfig } from "./watering";
 import { ZoneRegistry } from "./zones";
@@ -42,6 +48,8 @@ export interface AppOptions {
   sessionSweepMs: number;
 }
 
+const HISTORY_PRUNE_MS = 60 * 60 * 1000;
+const DEFAULT_HISTORY_LIMIT = 50;
 const MAX_SETUP_BODY_BYTES = 16 * 1024;
 
 async function readJson(req: IncomingMessage): Promise<Record<string, unknown> | null> {
@@ -66,6 +74,7 @@ export async function startApp(options: AppOptions) {
   const zones = new ZoneRegistry(options.staleAfterMs);
   const sections = new ZoneSections(options.db, options.defaultAlarmTimes);
   await sections.init();
+  const history = new ControlHistory(options.db);
 
   const { auth, db } = options;
   const authHandler = toNodeHandler(auth);
@@ -120,10 +129,51 @@ export async function startApp(options: AppOptions) {
     }
   };
 
+  const handleHistory = async (req: IncomingMessage, res: ServerResponse, query: URLSearchParams) => {
+    if (req.method !== "GET") {
+      res.writeHead(405).end();
+      return;
+    }
+    const current = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+      query: { disableRefresh: true },
+    });
+    if (!current) {
+      res.writeHead(401).end();
+      return;
+    }
+    if (!canControl(current.user.role)) {
+      res.writeHead(403).end();
+      return;
+    }
+
+    const zoneId = query.get("zone") ?? undefined;
+    const action = query.get("action") ?? undefined;
+    const before = query.has("before") ? Number(query.get("before")) : undefined;
+    const limit = query.has("limit") ? Number(query.get("limit")) : DEFAULT_HISTORY_LIMIT;
+    const valid =
+      (zoneId === undefined || isZoneId(zoneId)) &&
+      (action === undefined || isHistoryAction(action)) &&
+      (before === undefined || (Number.isSafeInteger(before) && before > 0)) &&
+      Number.isInteger(limit) &&
+      limit > 0 &&
+      limit <= MAX_HISTORY_LIMIT;
+    if (!valid) {
+      res.writeHead(400).end();
+      return;
+    }
+
+    const page = await history.list({ before, zoneId, action: action as HistoryAction | undefined, limit });
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify({ ...page, timeZone: options.watering.timeZone } satisfies HistoryPage));
+  };
+
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     const url = req.url ?? "";
     if (url.startsWith("/api/auth")) return authHandler(req, res);
     if (url === "/api/setup") return handleSetup(req, res);
+    const parsed = new URL(url, "http://localhost");
+    if (parsed.pathname === "/api/history") return handleHistory(req, res, parsed.searchParams);
 
     const zoneId = /^\/dev\/alarms\/([\w-]+)$/.exec(url)?.[1];
     if (!options.enableDevRoutes || req.method !== "POST" || !zoneId) {
@@ -158,15 +208,41 @@ export async function startApp(options: AppOptions) {
       query: { disableRefresh: true },
     });
 
-  /** Runs a device action only for a signed-in person whose role may control devices. */
-  const whenAllowed = async <T,>(
+  /**
+   * Runs an action only for a signed-in person whose role allows it, and records the attempt,
+   * refused ones included. Recording happens on the side so it can never delay or block the action.
+   */
+  const whenAllowed = async <T extends { ok: boolean }>(
     socket: Socket,
     forbidden: T,
-    action: (userId: string) => Promise<T>,
+    describe: (result: T) => HistoryEvent[] | Promise<HistoryEvent[]>,
+    action: (actor: Actor) => Promise<T>,
   ): Promise<T> => {
     const current = await sessionOf(socket);
-    if (!current) socket.disconnect(true);
-    return current && canControl(current.user.role) ? action(current.user.id) : forbidden;
+    if (!current) {
+      socket.disconnect(true);
+      return forbidden;
+    }
+    const actor: Actor = { id: current.user.id, name: current.user.name, role: current.user.role };
+    const log = (result: T) => {
+      Promise.resolve(result)
+        .then(describe)
+        .then((events) => history.record(actor, events))
+        .catch((error) => console.error("[history] could not describe:", error));
+    };
+    try {
+      const result = canControl(current.user.role) ? await action(actor) : forbidden;
+      log(result);
+      return result;
+    } catch (error) {
+      log({ ok: false, error: "internal" } as unknown as T);
+      throw error;
+    }
+  };
+
+  const cropRef = async (cropId: string) => {
+    const crop = (await sections.crops()).find(({ id }) => id === cropId);
+    return crop ? { id: crop.id, name: crop.name } : { id: cropId, name: cropId };
   };
 
   io.use((socket, next) => {
@@ -240,8 +316,13 @@ export async function startApp(options: AppOptions) {
         callback({ ok: false, error: "not_found" });
         return;
       }
-      whenAllowed(socket, { ok: false, error: "forbidden" } as const, (userId) =>
-        watering.confirm(cycleId, userId),
+      whenAllowed<ConfirmResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        (result) => [
+          { action: "alarm_confirm", zoneId: result.ok ? result.cycle.zoneId : undefined, ...outcomeOf(result) },
+        ],
+        (actor) => watering.confirm(cycleId, actor.id),
       ).then(callback, (error) => {
         console.error("[server] confirm failed:", error);
         callback({ ok: false, error: "internal" });
@@ -254,8 +335,11 @@ export async function startApp(options: AppOptions) {
         callback({ ok: false, error: "not_found" });
         return;
       }
-      whenAllowed(socket, { ok: false, error: "forbidden" } as const, (userId) =>
-        watering.startWatering(zoneId, userId),
+      whenAllowed<ConfirmResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        (result) => [{ action: "watering_start", zoneId, ...outcomeOf(result) }],
+        (actor) => watering.startWatering(zoneId, actor.id),
       ).then(callback, (error) => {
         console.error("[server] start failed:", error);
         callback({ ok: false, error: "internal" });
@@ -270,21 +354,40 @@ export async function startApp(options: AppOptions) {
         callback({ ok: false, error: "invalid" });
         return;
       }
-      whenAllowed(socket, { ok: false, error: "forbidden" } as ControlResult, async () => {
-        if (!(await sections.move(zoneIds, cropId))) return { ok: false, error: "invalid" } as ControlResult;
-        io.emit("sections:update", await sections.assignments());
-        return { ok: true } as ControlResult;
-      }).then(callback, () => callback({ ok: false, error: "internal" }));
+      whenAllowed<ControlResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        async (result) => {
+          const crop = await cropRef(cropId);
+          return zoneIds.map((zoneId) => ({ action: "zones_move", zoneId, detail: { crop }, ...outcomeOf(result) }));
+        },
+        async () => {
+          if (!(await sections.move(zoneIds, cropId))) return { ok: false, error: "invalid" };
+          io.emit("sections:update", await sections.assignments());
+          return { ok: true };
+        },
+      ).then(callback, () => callback({ ok: false, error: "internal" }));
     });
 
     socket.on("crop:add", (name, icon, callback) => {
       if (typeof callback !== "function") return;
-      whenAllowed(socket, { ok: false, error: "forbidden" } as AddCropResult, async () => {
-        const outcome = await sections.addCrop(name, icon);
-        if ("error" in outcome) return { ok: false, error: outcome.error } as AddCropResult;
-        io.emit("crops:update", await sections.crops());
-        return { ok: true, crop: outcome.crop } as AddCropResult;
-      }).then(callback, () => callback({ ok: false, error: "internal" }));
+      whenAllowed<AddCropResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        (result) => [
+          {
+            action: "crop_add",
+            detail: { crop: result.ok ? { id: result.crop.id, name: result.crop.name } : { id: "", name: String(name).slice(0, 60) } },
+            ...outcomeOf(result),
+          },
+        ],
+        async () => {
+          const outcome = await sections.addCrop(name, icon);
+          if ("error" in outcome) return { ok: false, error: outcome.error };
+          io.emit("crops:update", await sections.crops());
+          return { ok: true, crop: outcome.crop };
+        },
+      ).then(callback, () => callback({ ok: false, error: "internal" }));
     });
 
     socket.on("crop:schedule", (cropId, times, callback) => {
@@ -293,11 +396,22 @@ export async function startApp(options: AppOptions) {
         callback({ ok: false, error: "invalid" });
         return;
       }
-      whenAllowed(socket, { ok: false, error: "forbidden" } as ControlResult, async () => {
-        if (!(await sections.setAlarmTimes(cropId, times))) return { ok: false, error: "invalid" } as ControlResult;
-        io.emit("crops:update", await sections.crops());
-        return { ok: true } as ControlResult;
-      }).then(callback, () => callback({ ok: false, error: "internal" }));
+      whenAllowed<ControlResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        async (result) => [
+          {
+            action: "alarm_times",
+            detail: { crop: await cropRef(cropId), times: normalizeAlarmTimes(times) ?? undefined },
+            ...outcomeOf(result),
+          },
+        ],
+        async () => {
+          if (!(await sections.setAlarmTimes(cropId, times))) return { ok: false, error: "invalid" };
+          io.emit("crops:update", await sections.crops());
+          return { ok: true };
+        },
+      ).then(callback, () => callback({ ok: false, error: "internal" }));
     });
 
     socket.on("crop:remove", (cropId, callback) => {
@@ -306,12 +420,20 @@ export async function startApp(options: AppOptions) {
         callback({ ok: false, error: "not_found" });
         return;
       }
-      whenAllowed(socket, { ok: false, error: "forbidden" } as RemoveCropResult, async () => {
-        const outcome = await sections.removeCrop(cropId);
-        if (outcome !== "ok") return { ok: false, error: outcome } as RemoveCropResult;
-        io.emit("crops:update", await sections.crops());
-        return { ok: true } as RemoveCropResult;
-      }).then(callback, () => callback({ ok: false, error: "internal" }));
+      // Looked up first: after removal the name is gone.
+      const crop = cropRef(cropId);
+      whenAllowed<RemoveCropResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        async (result) => [{ action: "crop_remove", detail: { crop: await crop }, ...outcomeOf(result) }],
+        async () => {
+          await crop;
+          const outcome = await sections.removeCrop(cropId);
+          if (outcome !== "ok") return { ok: false, error: outcome };
+          io.emit("crops:update", await sections.crops());
+          return { ok: true };
+        },
+      ).then(callback, () => callback({ ok: false, error: "internal" }));
     });
 
     socket.on("pump:stop", (zoneId, callback) => {
@@ -320,10 +442,12 @@ export async function startApp(options: AppOptions) {
         callback({ ok: false, error: "invalid" });
         return;
       }
-      whenAllowed(socket, { ok: false, error: "forbidden" } as const, () => controls.stopPump(zoneId)).then(
-        callback,
-        () => callback({ ok: false, error: "internal" }),
-      );
+      whenAllowed<ControlResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        (result) => [{ action: "pump_stop", zoneId, ...outcomeOf(result) }],
+        () => controls.stopPump(zoneId),
+      ).then(callback, () => callback({ ok: false, error: "internal" }));
     });
 
     socket.on("actuator:set", (zoneId, actuator, on, callback) => {
@@ -332,8 +456,11 @@ export async function startApp(options: AppOptions) {
         callback({ ok: false, error: "invalid" });
         return;
       }
-      whenAllowed(socket, { ok: false, error: "forbidden" } as const, () =>
-        controls.setActuator(zoneId, actuator, on),
+      whenAllowed<ControlResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        (result) => [{ action: "actuator_set", zoneId, detail: { actuator, on }, ...outcomeOf(result) }],
+        () => controls.setActuator(zoneId, actuator, on),
       ).then(callback, () => callback({ ok: false, error: "internal" }));
     });
   });
@@ -349,6 +476,10 @@ export async function startApp(options: AppOptions) {
     }
     sweeping = false;
   }, options.sessionSweepMs);
+
+  const pruneHistory = () => history.prune().catch((error) => console.error("[history] prune failed:", error));
+  pruneHistory();
+  const historyPrune = setInterval(pruneHistory, HISTORY_PRUNE_MS);
 
   let ticking = false;
   const timer = setInterval(async () => {
@@ -374,6 +505,7 @@ export async function startApp(options: AppOptions) {
     async stop() {
       clearInterval(timer);
       clearInterval(sessionSweep);
+      clearInterval(historyPrune);
       controls.close();
       await io.close();
       await client.endAsync();

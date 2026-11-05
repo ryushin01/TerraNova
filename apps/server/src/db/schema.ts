@@ -1,6 +1,6 @@
-import type { CropIconKey, WateringState } from "@terranova/shared";
+import type { CropIconKey, HistoryAction, HistoryDetail, WateringState } from "@terranova/shared";
 import { sql } from "drizzle-orm";
-import { boolean, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { bigserial, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 const time = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 
@@ -58,6 +58,24 @@ export const zoneSections = pgTable("zone_sections", {
     .notNull()
     .references(() => crops.id),
 });
+
+export const controlEvents = pgTable(
+  "control_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    at: time("at").notNull().defaultNow(),
+    // Not a foreign key, and the name is a copy: records must outlive the account.
+    actorId: text("actor_id").notNull(),
+    actorName: text("actor_name").notNull(),
+    actorRole: text("actor_role").notNull(),
+    action: text("action").$type<HistoryAction>().notNull(),
+    zoneId: text("zone_id"),
+    detail: jsonb("detail").$type<HistoryDetail>().notNull().default({}),
+    result: text("result").notNull(),
+    reason: text("reason"),
+  },
+  (table) => [index("control_events_at").on(table.at), index("control_events_zone").on(table.zoneId, table.id)],
+);
 
 // Tables used by Better Auth, with the fields its admin plugin adds.
 export const user = pgTable("user", {
