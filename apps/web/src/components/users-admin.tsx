@@ -19,7 +19,8 @@ import {
 } from "@chakra-ui/react";
 import { ROLE_NAMES, type RoleName } from "@terranova/shared";
 import { useTranslations } from "next-intl";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { authClient } from "@/lib/auth-client";
 import { toaster } from "./toaster";
 
@@ -70,10 +71,12 @@ export function UsersAdmin() {
   const tRoles = useTranslations("roles");
   const { data: session, isPending } = authClient.useSession();
   const [users, setUsers] = useState<UserRow[] | null>(null);
-  const [saving, setSaving] = useState(false);
+  const createForm = useForm({
+    defaultValues: { name: "", email: "", password: "", role: "viewer" as RoleName },
+  });
   const [removing, setRemoving] = useState<UserRow | null>(null);
   const [resetting, setResetting] = useState<UserRow | null>(null);
-  const [resetBusy, setResetBusy] = useState(false);
+  const resetForm = useForm({ defaultValues: { "new-password": "" } });
   const isAdmin = session?.user.role === "admin";
 
   const load = useCallback(async () => {
@@ -96,26 +99,16 @@ export function UsersAdmin() {
     );
   }
 
-  const create = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const values = Object.fromEntries(new FormData(form)) as Record<string, string>;
-    setSaving(true);
-    const result = await authClient.admin.createUser({
-      name: values.name ?? "",
-      email: values.email ?? "",
-      password: values.password ?? "",
-      role: values.role as RoleName,
-    });
-    setSaving(false);
+  const create = createForm.handleSubmit(async (values) => {
+    const result = await authClient.admin.createUser(values);
     if (result.error) {
       toaster.create({ type: "error", title: t("createFailed") });
       return;
     }
-    form.reset();
+    createForm.reset();
     toaster.create({ type: "success", title: t("created") });
     await load();
-  };
+  });
 
   const changeRole = async (user: UserRow, role: RoleName) => {
     const result = await authClient.admin.setRole({ userId: user.id, role });
@@ -123,22 +116,24 @@ export function UsersAdmin() {
     await load();
   };
 
-  const resetPassword = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  // Clear on close, so a password never stays in the form state.
+  const closeReset = () => {
+    resetForm.reset();
+    setResetting(null);
+  };
+
+  const resetPassword = resetForm.handleSubmit(async ({ "new-password": newPassword }) => {
     if (!resetting) return;
-    const newPassword = String(new FormData(event.currentTarget).get("new-password") ?? "");
-    setResetBusy(true);
     const result = await authClient.admin.setUserPassword({ userId: resetting.id, newPassword });
     // The old password may be why this was needed, so nobody keeps a sign-in made with it.
     const revoked = result.error ? null : await authClient.admin.revokeUserSessions({ userId: resetting.id });
-    setResetBusy(false);
     if (result.error || revoked?.error) {
       toaster.create({ type: "error", title: t("resetFailed") });
       return;
     }
     toaster.create({ type: "success", title: t("resetDone") });
-    setResetting(null);
-  };
+    closeReset();
+  });
 
   const remove = async () => {
     if (!removing) return;
@@ -161,23 +156,34 @@ export function UsersAdmin() {
               <SimpleGrid columns={{ base: 1, md: 2 }} gap="4">
                 <Field.Root required>
                   <Field.Label>{tAuth("name")}</Field.Label>
-                  <Input name="name" autoComplete="off" />
+                  <Input {...createForm.register("name")} autoComplete="off" />
                 </Field.Root>
                 <Field.Root required>
                   <Field.Label>{tAuth("email")}</Field.Label>
-                  <Input name="email" type="email" autoComplete="off" />
+                  <Input {...createForm.register("email")} type="email" autoComplete="off" />
                 </Field.Root>
                 <Field.Root required>
                   <Field.Label>{tAuth("password")}</Field.Label>
-                  <Input name="password" type="password" autoComplete="new-password" minLength={8} />
+                  <Input
+                    {...createForm.register("password")}
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                  />
                   <Field.HelperText>{tAuth("passwordHelp")}</Field.HelperText>
                 </Field.Root>
                 <Field.Root>
                   <Field.Label>{t("role")}</Field.Label>
-                  <RoleSelect name="role" />
+                  <Controller
+                    control={createForm.control}
+                    name="role"
+                    render={({ field }) => (
+                      <RoleSelect name={field.name} value={field.value} onChange={field.onChange} />
+                    )}
+                  />
                 </Field.Root>
               </SimpleGrid>
-              <Button type="submit" alignSelf="flex-start" size="lg" loading={saving}>
+              <Button type="submit" alignSelf="flex-start" size="lg" loading={createForm.formState.isSubmitting}>
                 {t("create")}
               </Button>
             </Stack>
@@ -244,7 +250,7 @@ export function UsersAdmin() {
       <Dialog.Root
         open={!!resetting}
         onOpenChange={(event) => {
-          if (!event.open) setResetting(null);
+          if (!event.open) closeReset();
         }}
       >
         <Portal>
@@ -258,15 +264,21 @@ export function UsersAdmin() {
                 <Dialog.Body>
                   <Field.Root required>
                     <Field.Label>{t("resetLabel")}</Field.Label>
-                    <Input name="new-password" type="password" autoComplete="new-password" minLength={8} size="lg" />
+                    <Input
+                      {...resetForm.register("new-password")}
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={8}
+                      size="lg"
+                    />
                     <Field.HelperText>{t("resetHelp")}</Field.HelperText>
                   </Field.Root>
                 </Dialog.Body>
                 <Dialog.Footer>
-                  <Button type="button" variant="outline" onClick={() => setResetting(null)}>
+                  <Button type="button" variant="outline" onClick={closeReset}>
                     {t("cancel")}
                   </Button>
-                  <Button type="submit" data-reset-password-submit loading={resetBusy}>
+                  <Button type="submit" data-reset-password-submit loading={resetForm.formState.isSubmitting}>
                     {t("resetSubmit")}
                   </Button>
                 </Dialog.Footer>

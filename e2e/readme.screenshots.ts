@@ -88,7 +88,7 @@ test.describe("README screenshots", () => {
       const farm = new Farm(page);
       await farm.open();
       await page.locator("[data-add-crop]").click();
-      await page.locator('[name="crop-name"]').fill("방울토마토");
+      await page.locator('[name="name"]').fill("방울토마토");
       await expect(page.locator("[data-preview-icon]")).toHaveAttribute("data-preview-icon", "tomato");
       await shoot(page, "add-crop");
     });

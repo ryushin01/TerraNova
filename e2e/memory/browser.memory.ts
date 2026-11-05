@@ -70,9 +70,9 @@ test.describe("browser memory", () => {
       await farm.plot("zone-d").click({ button: "right" });
       await page.keyboard.press("Escape");
       await page.locator("[data-add-crop]").click();
-      await page.locator('[name="crop-name"]').fill(`토마토${pixel}`);
+      await page.locator('[name="name"]').fill(`토마토${pixel}`);
       await page.keyboard.press("Escape");
-      await page.locator('[name="crop-name"]').waitFor({ state: "detached" });
+      await page.locator('[name="name"]').waitFor({ state: "detached" });
 
       // Leave the dashboard and return, unmounting everything including the live connection.
       for (const [item, url] of [

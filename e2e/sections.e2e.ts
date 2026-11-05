@@ -72,7 +72,7 @@ test.describe("sections and crops", () => {
     const farm = new Farm(page);
     await farm.open();
     await page.locator("[data-add-crop]").click();
-    const name = page.locator('[name="crop-name"]');
+    const name = page.locator('[name="name"]');
     const preview = page.locator("[data-preview-icon]");
 
     await name.fill("방울토마토");
