@@ -1,5 +1,7 @@
 # TerraNova
 
+[![CI](https://github.com/ryushin01/TerraNova/actions/workflows/ci.yml/badge.svg)](https://github.com/ryushin01/TerraNova/actions/workflows/ci.yml)
+
 스마트팜 제어 애플리케이션입니다. 밭을 그리드로 보여 주고, 정해진 시각에 알람을 보내며, 사람이 확인하면 물을 줍니다.
 
 > **프로젝트 상태:** 개발 중입니다. 실제 장비 없이 MQTT 시뮬레이터로 로컬에서 실행하며, 배포는 하지 않습니다.
@@ -262,6 +264,8 @@ PGlite는 한 프로세스만 열 수 있으므로 DB 접근은 `apps/server`에
 | 브라우저 | `e2e/*.e2e.ts` | 로그인, 급수, 메뉴, 섹션, 드래그 선택, 화면 크기 |
 | 네트워크 모드 | `e2e/*.lan.ts` | 이 컴퓨터의 실제 IP로 접속해 노출 포트, 로그인 제한, 급수 확인 |
 | 메모리 | `e2e/memory` | 같은 부하를 반복해 메모리 증가 여부 측정 |
+
+타입 검사, 단위 테스트, 빌드, 브라우저 테스트, 네트워크 모드 테스트는 푸시와 PR마다 GitHub Actions에서도 실행됩니다.
 
 브라우저 테스트는 설치된 Chrome을 사용합니다. 처음 한 번 `bun install`만 하면 되고, 임시 DB를 쓰므로 기존 데이터에 영향을 주지 않습니다. 앱과 같은 포트를 쓰므로 `bun run dev`나 `bun run lan`을 끄고 실행합니다. 스펙마다 백엔드와 시뮬레이터를 직접 띄우며, 페이지 오류가 나면 해당 테스트는 실패합니다.
 
