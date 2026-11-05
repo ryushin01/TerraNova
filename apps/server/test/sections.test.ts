@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { DEFAULT_ZONE_CROPS, ZONE_IDS } from "@terranova/shared";
 import { openDatabase } from "../src/db";
 import { ZoneSections } from "../src/sections";
@@ -13,6 +16,13 @@ beforeEach(async () => {
 });
 
 afterEach(() => database.close());
+
+test("a database can be created where no folder exists yet", async () => {
+  const root = mkdtempSync(join(tmpdir(), "terranova-db-"));
+  const nested = await openDatabase(join(root, "not/yet/there/pglite"));
+  await nested.close();
+  rmSync(root, { recursive: true, force: true });
+});
 
 const addedCrop = async (name: string, icon?: string) => {
   const outcome = await sections.addCrop(name, icon);

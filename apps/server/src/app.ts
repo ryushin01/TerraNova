@@ -93,7 +93,10 @@ export async function startApp(options: AppOptions) {
       res.writeHead(405).end();
       return;
     }
-    if (!isAllowedOrigin(req.headers.origin)) {
+    // Browsers always send Origin here. Requiring it stops any other device or program from
+    // becoming the first admin of a new install.
+    const { origin } = req.headers;
+    if (!origin || !isAllowedOrigin(origin)) {
       res.writeHead(403).end();
       return;
     }

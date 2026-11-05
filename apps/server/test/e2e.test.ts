@@ -232,6 +232,13 @@ describe("access", () => {
     expect((await post("/api/auth/sign-in/email", { email: "x@terranova.test", password: PASSWORD })).status).toBe(401);
   });
 
+  test("setup refuses requests without an allowed Origin", async () => {
+    const body = JSON.stringify({ name: "X", email: "x@terranova.test", password: PASSWORD });
+    const headers = { "content-type": "application/json" };
+    expect((await fetch(`${BASE}/api/setup`, { method: "POST", headers, body })).status).toBe(403);
+    expect((await fetch(`${BASE}/api/setup`, { method: "POST", headers: { ...headers, origin: "http://192.168.0.9:3000" }, body })).status).toBe(403);
+  });
+
   test("a socket without a valid session is refused", async () => {
     for (const cookie of ["", "better-auth.session_token=forged.value"]) {
       const client = connect(cookie);
