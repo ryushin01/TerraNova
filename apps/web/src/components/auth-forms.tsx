@@ -63,7 +63,7 @@ function AuthCard({ title, description, children }: { title: string; description
           <Text fontWeight="bold">{t("heroBody")}</Text>
         </Stack>
       </Flex>
-      <Flex flex="1" align="center" justify="center" px="4" py="8" bg={{ lg: "white" }}>
+      <Flex flex="1" align="center" justify="center" px="4" py="8" bg={{ lg: "surface" }}>
         <Box w="full" maxW="sm">
           <Box mb="8" hideFrom="lg">
             <Logo />

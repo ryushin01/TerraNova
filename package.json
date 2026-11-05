@@ -21,7 +21,8 @@
     "docs:screenshots": "bun run --filter @terranova/e2e docs:screenshots",
     "admin:reset-password": "bun apps/server/src/reset-password.ts",
     "lint": "biome check .",
-    "format": "biome check --write ."
+    "format": "biome check --write .",
+    "memory:web": "bun e2e/memory/web.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.5",

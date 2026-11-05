@@ -178,7 +178,8 @@ export class ZoneSections {
       name,
       icon,
       alarmTimes: alarmTimes ?? [...this.defaultAlarmTimes],
-      automation: automation ?? NO_AUTOMATION,
+      // Rules saved by an older version lack newer fields.
+      automation: { ...NO_AUTOMATION, ...automation },
     };
   }
 

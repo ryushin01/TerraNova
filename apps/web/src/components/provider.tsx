@@ -4,6 +4,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 import createCache from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import { useServerInsertedHTML } from "next/navigation";
+import { ThemeProvider } from "next-themes";
 import { type ReactNode, useState } from "react";
 import { system } from "./theme";
 
@@ -75,7 +76,17 @@ export function Provider({ children }: { children: ReactNode }) {
 
   return (
     <CacheProvider value={cache}>
-      <ChakraProvider value={system}>{children}</ChakraProvider>
+      <ChakraProvider value={system}>
+        <ThemeProvider
+          attribute="class"
+          disableTransitionOnChange
+          // Its script only does anything in the server's HTML. Rendered in the browser, as on the 404
+          // page, React would warn about a script that can't run, so there it is marked as inert data.
+          scriptProps={{ type: typeof window === "undefined" ? undefined : "application/json" }}
+        >
+          {children}
+        </ThemeProvider>
+      </ChakraProvider>
     </CacheProvider>
   );
 }

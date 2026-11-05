@@ -24,9 +24,9 @@ const REFRESH_MS = 30_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // A more saturated copper than the accent, which reads as gray at the width of a line.
-const LINE_COLOR = "#b85a1f";
-const GRID_COLOR = "#ece6e4";
-const AXIS_COLOR = "#8a8381";
+const LINE_COLOR = "var(--chakra-colors-chart-line)";
+const GRID_COLOR = "var(--chakra-colors-chart-grid)";
+const AXIS_COLOR = "var(--chakra-colors-chart-axis)";
 
 type Measure = "temperatureC" | "humidityPct" | "soilMoisturePct";
 

@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 import { createAdmin, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
+import { WEB_ORIGIN } from "./ports";
 import { Stack } from "./stack";
 
 const images = join(dirname(fileURLToPath(import.meta.url)), "../docs/images");
@@ -158,10 +159,26 @@ test.describe("README screenshots with recorded readings", () => {
 
   test.use({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
 
+  test("dark mode", async ({ browser }) => {
+    const dark = await browser.newContext({
+      viewport: { width: 1440, height: 1000 },
+      baseURL: WEB_ORIGIN,
+      colorScheme: "dark",
+    });
+    await signIn(dark);
+    const page = await dark.newPage();
+    const farm = new Farm(page);
+    await farm.open();
+    await stack.triggerAlarm("zone-b");
+    await farm.expectLook("zone-b", "alarm");
+    await shoot(page, "dark");
+    await dark.close();
+  });
+
   test("sign in", async ({ browser }) => {
     const signedOut = await browser.newContext({
       viewport: { width: 1440, height: 900 },
-      baseURL: "http://localhost:3000",
+      baseURL: WEB_ORIGIN,
     });
     const page = await signedOut.newPage();
     await page.goto("/ko/login");

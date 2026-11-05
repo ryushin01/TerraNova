@@ -5,6 +5,8 @@ import { Automation, desiredLight, desiredVent } from "../src/automation";
 const OFF: AutomationRules = {
   ventOnAboveC: null,
   ventOffBelowC: null,
+  ventOnAboveHumidityPct: null,
+  ventOffBelowHumidityPct: null,
   lightOnAt: null,
   lightOffAt: null,
   soilAlarmBelowPct: null,
@@ -30,7 +32,26 @@ describe("rule decisions", () => {
     [25, false],
     [20, false],
   ])("at %p°C the vent wants %p", (temperature, expected) => {
-    expect(desiredVent(vent, temperature)).toBe(expected);
+    expect(desiredVent(vent, temperature, 50)).toBe(expected);
+  });
+
+  const both = { ...OFF, ventOnAboveC: 30, ventOffBelowC: 25, ventOnAboveHumidityPct: 80, ventOffBelowHumidityPct: 60 };
+  test.each([
+    [31, 50, true],
+    [20, 85, true],
+    [31, 85, true],
+    [20, 50, false],
+    [25, 60, false],
+    [20, 70, null],
+    [27, 50, null],
+  ])("at %p°C and %p%% humidity the vent wants %p", (temperature, humidity, expected) => {
+    expect(desiredVent(both, temperature, humidity)).toBe(expected);
+  });
+
+  test("humidity works without a temperature rule", () => {
+    const humidity = { ...OFF, ventOnAboveHumidityPct: 80, ventOffBelowHumidityPct: 60 };
+    expect(desiredVent(humidity, 99, 85)).toBe(true);
+    expect(desiredVent(humidity, 99, 50)).toBe(false);
   });
 
   const at = (hour: number, minute = 0) => hour * 60 + minute;
@@ -48,7 +69,7 @@ describe("rule decisions", () => {
   });
 
   test("unset rules leave things alone", () => {
-    expect(desiredVent(OFF, 99)).toBeNull();
+    expect(desiredVent(OFF, 99, 99)).toBeNull();
     expect(desiredLight(OFF, 100)).toBeNull();
   });
 });
@@ -59,6 +80,8 @@ describe("validating rules", () => {
     const full = {
       ventOnAboveC: 30,
       ventOffBelowC: 25,
+      ventOnAboveHumidityPct: 80,
+      ventOffBelowHumidityPct: 60,
       lightOnAt: "08:00",
       lightOffAt: "18:00",
       soilAlarmBelowPct: 30,
@@ -73,6 +96,9 @@ describe("validating rules", () => {
     [{ ventOffBelowC: 25 }],
     [{ ventOnAboveC: 999, ventOffBelowC: 25 }],
     [{ ventOnAboveC: "30", ventOffBelowC: 25 }],
+    [{ ventOnAboveHumidityPct: 60, ventOffBelowHumidityPct: 80 }],
+    [{ ventOnAboveHumidityPct: 80 }],
+    [{ ventOnAboveHumidityPct: 180, ventOffBelowHumidityPct: 60 }],
     [{ lightOnAt: "08:00" }],
     [{ lightOnAt: "25:00", lightOffAt: "18:00" }],
     [{ lightOnAt: "08:00", lightOffAt: "08:00" }],
@@ -154,6 +180,16 @@ describe("running rules", () => {
     expect(automation.pauses(30 * 60_000)).toEqual({});
   });
 
+  test("resuming hands the setting straight back to the rule", async () => {
+    automation.noteManualChange("zone-a", "vent", 0);
+    await automation.tick(1000);
+    expect(commands).toEqual([]);
+    automation.resume("zone-a", "vent");
+    expect(automation.pauses(1000)).toEqual({});
+    await automation.tick(1001);
+    expect(commands).toEqual([["vent", true]]);
+  });
+
   test("offline zones and sections without rules are skipped", async () => {
     current = null;
     await automation.tick(0);
@@ -180,7 +216,14 @@ describe("running rules", () => {
   });
 
   test("no rule can ever command the pump", async () => {
-    rules = { ventOnAboveC: 30, ventOffBelowC: 25, lightOnAt: "08:00", lightOffAt: "18:00", soilAlarmBelowPct: 60 };
+    rules = {
+      ...OFF,
+      ventOnAboveC: 30,
+      ventOffBelowC: 25,
+      lightOnAt: "08:00",
+      lightOffAt: "18:00",
+      soilAlarmBelowPct: 60,
+    };
     current = reading({ temperatureC: 40, soilMoisturePct: 1 });
     await automation.tick(0);
     expect(commands.map(([actuator]) => actuator).sort()).toEqual(["light", "vent"]);

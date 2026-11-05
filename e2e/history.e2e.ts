@@ -1,4 +1,5 @@
-import { createAdmin, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
+import { createAdmin, createUser, expect, expectFitsScreen, Farm, signIn, test, useStack } from "./fixtures";
+import { WEB_ORIGIN } from "./ports";
 
 test.describe.configure({ mode: "serial" });
 
@@ -60,7 +61,7 @@ test.describe("control history", () => {
     await page.locator('[name="history-action"]').selectOption("actuator_set");
     await expect(page.locator("[data-history-row]")).toHaveCount(1);
 
-    const other = await browser.newContext({ baseURL: "http://localhost:3000" });
+    const other = await browser.newContext({ baseURL: WEB_ORIGIN });
     await signIn(other);
     const otherPage = await other.newPage();
     const farm = new Farm(otherPage);
@@ -97,7 +98,7 @@ test.describe("control history", () => {
       password: "correct-horse-2",
       role: "viewer",
     });
-    const viewerContext = await browser.newContext({ baseURL: "http://localhost:3000" });
+    const viewerContext = await browser.newContext({ baseURL: WEB_ORIGIN });
     await signIn(viewerContext, "viewer@terranova.test", "correct-horse-2");
     const viewerPage = await viewerContext.newPage();
     const farm = new Farm(viewerPage);
@@ -110,9 +111,7 @@ test.describe("control history", () => {
     await viewerContext.close();
 
     expect(
-      (
-        await browser.newContext({ baseURL: "http://localhost:3000" }).then((c) => c.request.get("/api/history"))
-      ).status(),
+      (await browser.newContext({ baseURL: WEB_ORIGIN }).then((c) => c.request.get("/api/history"))).status(),
     ).toBe(401);
 
     await page.goto("/ko/history");
@@ -125,11 +124,7 @@ test.describe("control history", () => {
     test("fits the screen", async ({ page }) => {
       await page.goto("/ko/history");
       await expect(page.locator("[data-history-row]").first()).toBeVisible();
-      const { inner, width } = await page.evaluate(() => ({
-        inner: innerWidth,
-        width: document.documentElement.scrollWidth,
-      }));
-      expect(width).toBe(inner);
+      await expectFitsScreen(page);
     });
   });
 

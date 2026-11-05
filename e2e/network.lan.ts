@@ -2,13 +2,15 @@ import { request as httpsRequest } from "node:https";
 import { connect } from "node:net";
 import { networkInterfaces } from "node:os";
 import { expect, test } from "@playwright/test";
+import { expectFitsScreen } from "./fixtures";
+import { BACKEND_PORT, LAN_PORT, MQTT_PORT, WEB_PORT } from "./ports";
 
 const address = Object.values(networkInterfaces())
   .flat()
   .find((item) => item && item.family === "IPv4" && !item.internal)!.address;
 const ADMIN = { name: "관리자", email: "admin@terranova.test", password: "correct-horse-1" };
-const PUBLIC = `https://${address}:8443`;
-const LOCAL = "https://localhost:8443";
+const PUBLIC = `https://${address}:${LAN_PORT}`;
+const LOCAL = `https://localhost:${LAN_PORT}`;
 
 /** HTTPS request that skips the self-signed certificate check, from a chosen address. */
 function post(url: string, path: string, body: unknown, origin: string, extra: Record<string, string> = {}) {
@@ -44,10 +46,10 @@ const canConnect = (port: number) =>
 test.describe.configure({ mode: "serial" });
 
 test("only the HTTPS port is reachable from the network", async () => {
-  expect(await canConnect(8443)).toBe(true);
-  expect(await canConnect(3000)).toBe(false);
-  expect(await canConnect(4000)).toBe(false);
-  expect(await canConnect(1883)).toBe(false);
+  expect(await canConnect(LAN_PORT)).toBe(true);
+  expect(await canConnect(WEB_PORT)).toBe(false);
+  expect(await canConnect(BACKEND_PORT)).toBe(false);
+  expect(await canConnect(MQTT_PORT)).toBe(false);
 });
 
 test("the first admin can only be created on this computer", async () => {
@@ -83,8 +85,7 @@ test("a phone signs in, sees live data, and waters a field", async ({ page, cont
   await expect(card).toContainText("물주기 완료");
   await expect(card.locator("[data-look]")).toHaveAttribute("data-look", "completed");
 
-  const scroll = await page.evaluate(() => ({ inner: innerWidth, width: document.documentElement.scrollWidth }));
-  expect(scroll.width).toBe(scroll.inner);
+  await expectFitsScreen(page);
 
   await page.goto("/ko/history");
   await expect(page.locator('[data-history-row="watering_start"]')).toContainText(ADMIN.name);

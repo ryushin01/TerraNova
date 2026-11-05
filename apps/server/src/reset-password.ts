@@ -37,7 +37,7 @@ const dataDir = process.env.DATA_DIR ?? join(import.meta.dir, "../.data/pglite")
 const email = process.argv[2]?.trim().toLowerCase();
 
 // PGlite allows one process at a time, and a second one could damage the database.
-if (await isListening(Number(process.env.RESET_CHECK_PORT ?? DEFAULT_SOCKET_PORT))) {
+if (await isListening(Number(process.env.RESET_CHECK_PORT ?? process.env.BACKEND_PORT ?? DEFAULT_SOCKET_PORT))) {
   fail("The server is running. Stop it first (Ctrl+C), then run this again.");
 }
 // Opening a missing database would quietly create an empty one.

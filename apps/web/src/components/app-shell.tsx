@@ -20,8 +20,9 @@ import {
 } from "@chakra-ui/react";
 import { canControl } from "@terranova/shared";
 import { useLocale, useTranslations } from "next-intl";
-import { type ReactNode, useState } from "react";
-import { LuChevronDown, LuLanguages, LuMenu, LuSprout } from "react-icons/lu";
+import { useTheme } from "next-themes";
+import { type ReactNode, useEffect, useState } from "react";
+import { LuChevronDown, LuLanguages, LuMenu, LuMoon, LuSprout, LuSun } from "react-icons/lu";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { ChangePasswordDialog } from "./change-password-dialog";
@@ -36,18 +37,28 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
         boxSize="9"
         align="center"
         justify="center"
-        bg={inverted ? "white" : "ink"}
-        color={inverted ? "ink" : "white"}
+        bg={inverted ? "#f3efee" : "ink"}
+        color={inverted ? "#181818" : "inkContrast"}
         style={{ clipPath: chamfer("10px") }}
       >
         <Icon as={LuSprout} boxSize="5" aria-hidden />
       </Flex>
-      <Text fontSize="xl" fontWeight="800" letterSpacing="-0.02em" color={inverted ? "white" : "ink"}>
+      <Text fontSize="xl" fontWeight="800" letterSpacing="-0.02em" color={inverted ? "#f3efee" : "ink"}>
         TerraNova
       </Text>
     </HStack>
   );
 }
+
+/** The drawer stays dark in either theme, so its plain buttons need their own colours. */
+const DRAWER_ACTION = {
+  variant: "ghost",
+  color: "#f3efee",
+  justifyContent: "flex-start",
+  w: "full",
+  minH: "11",
+  _hover: { bg: "whiteAlpha.200" },
+} as const;
 
 function NavLinks({ direction, onNavigate }: { direction: "row" | "column"; onNavigate?: () => void }) {
   const t = useTranslations("nav");
@@ -78,7 +89,7 @@ function NavLinks({ direction, onNavigate }: { direction: "row" | "column"; onNa
               minH="11"
               fontWeight="bold"
               textDecoration="none"
-              color={direction === "column" ? "white" : "ink"}
+              color={direction === "column" ? "#f3efee" : "ink"}
               fontSize={direction === "column" ? "xl" : "sm"}
               _hover={{ color: "copper", textDecoration: "none" }}
               _focusVisible={{ outline: "2px solid", outlineColor: "copper", outlineOffset: "2px" }}
@@ -94,12 +105,38 @@ function NavLinks({ direction, onNavigate }: { direction: "row" | "column"; onNa
   );
 }
 
+/** Light or dark, with an icon only in the header or spelled out in the drawer. */
+function ThemeToggle({ inDrawer = false }: { inDrawer?: boolean }) {
+  const t = useTranslations("nav");
+  const { resolvedTheme, setTheme } = useTheme();
+  // The server can't know the visitor's theme, so the icon waits until the page is running.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const dark = mounted && resolvedTheme === "dark";
+  const label = t(dark ? "lightMode" : "darkMode");
+  const toggle = () => setTheme(dark ? "light" : "dark");
+
+  if (inDrawer) {
+    return (
+      <Button {...DRAWER_ACTION} onClick={toggle}>
+        {dark ? <LuSun aria-hidden /> : <LuMoon aria-hidden />}
+        {label}
+      </Button>
+    );
+  }
+  return (
+    <IconButton variant="ghost" colorPalette="gray" aria-label={label} onClick={toggle}>
+      {dark ? <LuSun /> : <LuMoon />}
+    </IconButton>
+  );
+}
+
 /** The page frame: navigation across the top, or in a drawer on small screens, with the full width for content. */
 export function AppShell({ title, children }: { title: string; children: ReactNode }) {
   const t = useTranslations("nav");
   const tRoles = useTranslations("roles");
   const tDash = useTranslations("dashboard");
-  const locale = useLocale();
+  const otherLocale = useLocale() === "ko" ? "en" : "ko";
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = authClient.useSession();
@@ -139,19 +176,23 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
           <Box hideBelow="lg">
             <NavLinks direction="row" />
           </Box>
-          <Button asChild variant="ghost" colorPalette="gray" size="sm" minH="11">
-            <Link href={pathname} locale={locale === "ko" ? "en" : "ko"}>
-              <LuLanguages aria-hidden />
-              {tDash("languageSwitch")}
-            </Link>
-          </Button>
+          {/* A phone's header only has room for the essentials; these two move to the drawer there. */}
+          <HStack gap={{ base: "1", md: "6" }} hideBelow="sm">
+            <Button asChild variant="ghost" colorPalette="gray" size="sm" minH="11">
+              <Link href={pathname} locale={otherLocale}>
+                <LuLanguages aria-hidden />
+                {tDash("languageSwitch")}
+              </Link>
+            </Button>
+            <ThemeToggle />
+          </HStack>
           {session && (
             <Menu.Root>
               <Menu.Trigger asChild>
                 <Button
-                  bg="white"
+                  bg="surface"
                   color="ink"
-                  _hover={{ bg: "white", color: "copper" }}
+                  _hover={{ bg: "surface", color: "copper" }}
                   size="sm"
                   minH="11"
                   pl="2"
@@ -229,13 +270,22 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
         <Portal>
           <Drawer.Backdrop />
           <Drawer.Positioner>
-            <Drawer.Content maxW="72" bg="ink" color="white">
+            <Drawer.Content maxW="72" bg="#181818" color="#f3efee">
               <Drawer.Header>
                 <Logo inverted />
               </Drawer.Header>
               <Drawer.Body>
                 <Stack>
                   <NavLinks direction="column" onNavigate={() => setDrawerOpen(false)} />
+                  <Stack hideFrom="sm" mt="4" pt="4" borderTopWidth="1px" borderColor="whiteAlpha.300" gap="1">
+                    <Button asChild {...DRAWER_ACTION}>
+                      <Link href={pathname} locale={otherLocale} onClick={() => setDrawerOpen(false)}>
+                        <LuLanguages aria-hidden />
+                        {tDash("languageSwitch")}
+                      </Link>
+                    </Button>
+                    <ThemeToggle inDrawer />
+                  </Stack>
                 </Stack>
               </Drawer.Body>
               <Drawer.CloseTrigger asChild>

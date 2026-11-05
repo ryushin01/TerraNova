@@ -30,8 +30,8 @@ export type Connection = "connecting" | "connected" | "disconnected";
  * goes to the host that set it. In network mode everything comes through one address.
  */
 const socketUrl = () =>
-  window.location.port === "3000"
-    ? `${window.location.protocol}//${window.location.hostname}:${DEFAULT_SOCKET_PORT}`
+  window.location.port === (process.env.NEXT_PUBLIC_WEB_PORT ?? "3000")
+    ? `${window.location.protocol}//${window.location.hostname}:${process.env.NEXT_PUBLIC_BACKEND_PORT ?? DEFAULT_SOCKET_PORT}`
     : window.location.origin;
 
 export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: WateringCycle) => void) {
@@ -135,6 +135,11 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
       request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crop:automation", cropId, rules)),
     [request],
   );
+  const resumeAutomation = useCallback(
+    (zoneId: string, actuator: ManualActuator) =>
+      request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("automation:resume", zoneId, actuator)),
+    [request],
+  );
   const reorderCrops = useCallback(
     (cropIds: string[]) =>
       request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crops:reorder", cropIds)),
@@ -174,6 +179,7 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
     addCrop,
     updateCrop,
     setAutomation,
+    resumeAutomation,
     reorderCrops,
     setAlarmTimes,
     removeCrop,

@@ -93,6 +93,8 @@ const timed = () => main.timeout(5000);
 await timed().emitWithAck("crop:automation", "bellflower", {
   ventOnAboveC: 5,
   ventOffBelowC: 1,
+  ventOnAboveHumidityPct: null,
+  ventOffBelowHumidityPct: null,
   lightOnAt: "00:00",
   lightOffAt: "23:59",
   soilAlarmBelowPct: null,

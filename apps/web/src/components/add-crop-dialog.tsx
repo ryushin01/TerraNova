@@ -18,6 +18,7 @@ interface Props {
 
 export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
   const t = useTranslations("addCrop");
+  const tIcons = useTranslations("cropIcons");
   const [name, setName] = useState("");
   /** Null means the icon follows the name. It stops once someone picks one by hand. */
   const [chosenIcon, setChosenIcon] = useState<CropIconKey | null>(null);
@@ -117,7 +118,7 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
                           type="button"
                           size="md"
                           data-icon-option={key}
-                          aria-label={key}
+                          aria-label={tIcons(key)}
                           aria-pressed={icon === key}
                           variant={icon === key ? "subtle" : "ghost"}
                           onClick={() => setChosenIcon(key)}

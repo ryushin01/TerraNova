@@ -1,8 +1,9 @@
 import { type BrowserContext, test as base, expect, type Locator, type Page } from "@playwright/test";
+import { BACKEND_URL, WEB_ORIGIN } from "./ports";
 import { Stack } from "./stack";
 
-const ORIGIN = "http://localhost:3000";
-const BACKEND = "http://127.0.0.1:4000";
+const ORIGIN = WEB_ORIGIN;
+const BACKEND = BACKEND_URL;
 
 export const ADMIN = { name: "관리자", email: "admin@terranova.test", password: "correct-horse-1" };
 
@@ -27,6 +28,15 @@ export const test = base.extend<{ pageErrors: string[] }>({
 
 export { expect };
 
+/**
+ * Compares with the size the test asked for. On a phone-sized page the browser widens innerWidth
+ * to fit whatever overflows, so comparing with innerWidth passes even when content runs off screen.
+ */
+export async function expectFitsScreen(page: Page): Promise<void> {
+  const width = page.viewportSize()?.width;
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+}
+
 /** Runs a real backend and simulator for the enclosing describe block. */
 export function useStack(serverEnv: Record<string, string> = {}, simulatorEnv: Record<string, string> = {}): Stack {
   const stack = new Stack(serverEnv, simulatorEnv);
@@ -49,7 +59,8 @@ export async function signIn(context: BrowserContext, email = ADMIN.email, passw
     headers: { origin: ORIGIN },
     data: { email, password },
   });
-  expect(response.status()).toBe(200);
+  // A bare status says nothing in CI, where the reason is usually in the body.
+  if (response.status() !== 200) throw new Error(`sign-in returned ${response.status()}: ${await response.text()}`);
 }
 
 export async function createUser(

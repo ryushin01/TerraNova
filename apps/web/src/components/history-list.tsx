@@ -53,6 +53,7 @@ function Filter({
 export function HistoryList() {
   const t = useTranslations("history");
   const tCrops = useTranslations("crops");
+  const tRoles = useTranslations("roles");
   const tZones = useTranslations("dashboard");
   const format = useFormatter();
   const [zone, setZone] = useState("");
@@ -142,6 +143,16 @@ export function HistoryList() {
         });
       case "password_reset":
         return t("actions.password_reset", { name: detail.target ?? "–" });
+      case "automation_resume":
+        return t("actions.automation_resume", { device: t(`devices.${detail.actuator}` as never) });
+      case "account_create":
+      case "account_remove":
+        return t(`actions.${kind}`, { name: detail.target ?? "–" });
+      case "role_change":
+        return t("actions.role_change", {
+          name: detail.target ?? "–",
+          role: tRoles.has(detail.role as never) ? tRoles(detail.role as never) : (detail.role ?? "–"),
+        });
       case "automation_change":
         return t("actions.automation_change", { section: cropName(detail.crop) });
       case "alarm_times":

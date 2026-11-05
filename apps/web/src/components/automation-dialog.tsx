@@ -35,6 +35,8 @@ export function AutomationDialog({ section, onClose, onSave }: Props) {
     const next = normalizeAutomation({
       ventOnAboveC: numberOrNull(data.get("vent-on")),
       ventOffBelowC: numberOrNull(data.get("vent-off")),
+      ventOnAboveHumidityPct: numberOrNull(data.get("humidity-on")),
+      ventOffBelowHumidityPct: numberOrNull(data.get("humidity-off")),
       lightOnAt: textOrNull(data.get("light-on")),
       lightOffAt: textOrNull(data.get("light-off")),
       soilAlarmBelowPct: numberOrNull(data.get("soil-alarm")),
@@ -97,6 +99,33 @@ export function AutomationDialog({ section, onClose, onSave }: Props) {
                         />
                       </Field.Root>
                     </HStack>
+                    <HStack align="flex-start">
+                      <Field.Root>
+                        <Field.Label>{t("humidityOn")}</Field.Label>
+                        <Input
+                          name="humidity-on"
+                          type="number"
+                          step="1"
+                          min={0}
+                          max={100}
+                          defaultValue={rules?.ventOnAboveHumidityPct ?? ""}
+                        />
+                      </Field.Root>
+                      <Field.Root>
+                        <Field.Label>{t("humidityOff")}</Field.Label>
+                        <Input
+                          name="humidity-off"
+                          type="number"
+                          step="1"
+                          min={0}
+                          max={100}
+                          defaultValue={rules?.ventOffBelowHumidityPct ?? ""}
+                        />
+                      </Field.Root>
+                    </HStack>
+                    <Field.Root>
+                      <Field.HelperText>{t("ventHelp")}</Field.HelperText>
+                    </Field.Root>
                   </Fieldset.Root>
                   <Fieldset.Root>
                     <Fieldset.Legend>{t("light")}</Fieldset.Legend>

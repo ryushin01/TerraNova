@@ -1,4 +1,5 @@
 import { createAdmin, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
+import { WEB_ORIGIN } from "./ports";
 
 /** Local time in the farm's time zone, a number of minutes from now. */
 function seoulTime(minutesFromNow: number): string {
@@ -121,7 +122,7 @@ test.describe("alarm times", () => {
       password: "correct-horse-2",
       role: "viewer",
     });
-    const viewerContext = await browser.newContext({ baseURL: "http://localhost:3000" });
+    const viewerContext = await browser.newContext({ baseURL: WEB_ORIGIN });
     await signIn(viewerContext, "viewer@terranova.test", "correct-horse-2");
     const page = await viewerContext.newPage();
     const farm = new Farm(page);

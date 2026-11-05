@@ -133,7 +133,8 @@
       "watering": "급수 중",
       "alarms": "대기 알람",
       "soil": "평균 토양 수분"
-    }
+    },
+    "automationResume": "자동 제어 다시 켜기"
   },
   "nav": {
     "users": "사용자 관리",
@@ -151,7 +152,9 @@
     "sensors": "센서 이력",
     "navigation": "주요 메뉴",
     "openNavigation": "메뉴 열기",
-    "closeNavigation": "메뉴 닫기"
+    "closeNavigation": "메뉴 닫기",
+    "darkMode": "다크 모드",
+    "lightMode": "라이트 모드"
   },
   "roles": {
     "admin": "관리자",
@@ -265,7 +268,11 @@
       "crops_reorder": "섹션 순서 변경",
       "password_change": "내 비밀번호 변경",
       "password_reset": "{name} 비밀번호 재설정",
-      "automation_change": "{section} 자동 제어 변경"
+      "automation_change": "{section} 자동 제어 변경",
+      "automation_resume": "{device} 자동 제어 다시 켜기",
+      "account_create": "{name} 계정 추가",
+      "account_remove": "{name} 계정 삭제",
+      "role_change": "{name} 역할을 {role}(으)로 변경"
     },
     "filters": {
       "alarm_confirm": "알람 확인",
@@ -280,7 +287,11 @@
       "crops_reorder": "섹션 순서 변경",
       "password_change": "비밀번호 변경",
       "password_reset": "비밀번호 재설정",
-      "automation_change": "자동 제어 변경"
+      "automation_change": "자동 제어 변경",
+      "automation_resume": "자동 제어 다시 켜기",
+      "account_create": "계정 추가",
+      "account_remove": "계정 삭제",
+      "role_change": "역할 변경"
     },
     "results": {
       "ok": "성공",
@@ -301,6 +312,10 @@
     "actors": {
       "system": "자동 제어",
       "local": "복구 명령"
+    },
+    "devices": {
+      "vent": "환기",
+      "light": "조명"
     }
   },
   "password": {
@@ -349,10 +364,13 @@
     "lightOff": "끄는 시각",
     "soil": "토양 수분 알람 (% 미만)",
     "soilHelp": "이 값 아래로 내려가면 알람만 보내요. 물을 주려면 확인이 필요해요. 69 이하로 정해 주세요.",
-    "invalid": "환기는 켜는 온도와 끄는 온도를 함께 정하고 켜는 온도를 더 높게, 조명은 두 시각을 함께 서로 다르게 입력해 주세요.",
+    "invalid": "환기는 켜는 값과 끄는 값을 함께 정하고 켜는 값을 더 높게, 조명은 두 시각을 함께 서로 다르게 입력해 주세요.",
     "failed": "저장하지 못했어요. 다시 시도해 주세요.",
     "cancel": "취소",
-    "save": "저장"
+    "save": "저장",
+    "humidityOn": "켜는 습도 (% 이상)",
+    "humidityOff": "끄는 습도 (% 이하)",
+    "ventHelp": "온도나 습도 중 하나라도 높으면 켜고, 정한 값이 모두 낮아져야 꺼요."
   },
   "errors": {
     "errorTitle": "문제가 발생했어요",
@@ -361,5 +379,64 @@
     "notFoundTitle": "페이지를 찾을 수 없어요",
     "notFoundDescription": "주소가 바뀌었거나 없는 페이지예요.",
     "home": "대시보드로 가기"
+  },
+  "cropIcons": {
+    "sprout": "새싹",
+    "flower": "꽃",
+    "tulip": "튤립",
+    "lotus": "연꽃",
+    "rose": "장미",
+    "sunflower": "해바라기",
+    "wheat": "밀",
+    "corn": "옥수수",
+    "leaf": "잎",
+    "salad": "샐러드 채소",
+    "herb": "허브",
+    "cabbage": "양배추",
+    "broccoli": "브로콜리",
+    "leek": "대파",
+    "garlic": "마늘",
+    "carrot": "당근",
+    "beet": "비트",
+    "roots": "뿌리채소",
+    "potato": "감자",
+    "tomato": "토마토",
+    "chili": "고추",
+    "cucumber": "오이",
+    "bellPepper": "피망",
+    "eggplant": "가지",
+    "pumpkin": "호박",
+    "watermelon": "수박",
+    "melon": "멜론",
+    "strawberry": "딸기",
+    "berry": "베리",
+    "apple": "사과",
+    "pear": "배",
+    "grape": "포도",
+    "citrus": "귤",
+    "lemon": "레몬",
+    "peach": "복숭아",
+    "cherry": "체리",
+    "banana": "바나나",
+    "pineapple": "파인애플",
+    "kiwi": "키위",
+    "avocado": "아보카도",
+    "olive": "올리브",
+    "bean": "콩",
+    "peas": "완두콩",
+    "peanut": "땅콩",
+    "sesame": "참깨",
+    "nut": "견과",
+    "almond": "아몬드",
+    "acorn": "도토리",
+    "mushroom": "버섯",
+    "tea": "차",
+    "coffee": "커피",
+    "bamboo": "대나무",
+    "cactus": "선인장",
+    "cotton": "목화",
+    "hops": "홉",
+    "grass": "풀",
+    "tree": "나무"
   }
 }

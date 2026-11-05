@@ -186,6 +186,8 @@ export interface Crop {
 export interface AutomationRules {
   ventOnAboveC: number | null;
   ventOffBelowC: number | null;
+  ventOnAboveHumidityPct: number | null;
+  ventOffBelowHumidityPct: number | null;
   lightOnAt: string | null;
   lightOffAt: string | null;
   /** Raises an alarm, which someone still has to confirm. */
@@ -195,6 +197,8 @@ export interface AutomationRules {
 export const NO_AUTOMATION: AutomationRules = {
   ventOnAboveC: null,
   ventOffBelowC: null,
+  ventOnAboveHumidityPct: null,
+  ventOffBelowHumidityPct: null,
   lightOnAt: null,
   lightOffAt: null,
   soilAlarmBelowPct: null,
@@ -210,6 +214,8 @@ export function normalizeAutomation(value: unknown): AutomationRules | null {
 
   const ventOnAboveC = v.ventOnAboveC ?? null;
   const ventOffBelowC = v.ventOffBelowC ?? null;
+  const ventOnAboveHumidityPct = v.ventOnAboveHumidityPct ?? null;
+  const ventOffBelowHumidityPct = v.ventOffBelowHumidityPct ?? null;
   const lightOnAt = v.lightOnAt ?? null;
   const lightOffAt = v.lightOffAt ?? null;
   const soilAlarmBelowPct = v.soilAlarmBelowPct ?? null;
@@ -219,15 +225,23 @@ export function normalizeAutomation(value: unknown): AutomationRules | null {
     number(ventOnAboveC, -20, 60) &&
     number(ventOffBelowC, -20, 60) &&
     (ventOffBelowC as number) < (ventOnAboveC as number);
+  const humidityBlank = ventOnAboveHumidityPct === null && ventOffBelowHumidityPct === null;
+  const humidityValid =
+    number(ventOnAboveHumidityPct, 0, 100) &&
+    number(ventOffBelowHumidityPct, 0, 100) &&
+    (ventOffBelowHumidityPct as number) < (ventOnAboveHumidityPct as number);
   const lightBlank = lightOnAt === null && lightOffAt === null;
   const lightValid = time(lightOnAt) && time(lightOffAt) && lightOnAt !== lightOffAt;
   // At or above the sufficient level, the alarm could never lead to watering.
   const soilValid = soilAlarmBelowPct === null || number(soilAlarmBelowPct, 1, SOIL_SUFFICIENT_PCT - 1);
 
-  if (!(ventBlank || ventValid) || !(lightBlank || lightValid) || !soilValid) return null;
+  if (!(ventBlank || ventValid) || !(humidityBlank || humidityValid) || !(lightBlank || lightValid) || !soilValid)
+    return null;
   return {
     ventOnAboveC: ventOnAboveC as number | null,
     ventOffBelowC: ventOffBelowC as number | null,
+    ventOnAboveHumidityPct: ventOnAboveHumidityPct as number | null,
+    ventOffBelowHumidityPct: ventOffBelowHumidityPct as number | null,
     lightOnAt: lightOnAt as string | null,
     lightOffAt: lightOffAt as string | null,
     soilAlarmBelowPct: soilAlarmBelowPct as number | null,
@@ -339,6 +353,10 @@ export const HISTORY_ACTIONS = [
   "password_change",
   "password_reset",
   "automation_change",
+  "automation_resume",
+  "account_create",
+  "account_remove",
+  "role_change",
 ] as const;
 export type HistoryAction = (typeof HISTORY_ACTIONS)[number];
 
@@ -353,8 +371,9 @@ export interface HistoryDetail {
   /** The name before a rename. */
   previousName?: string;
   times?: string[];
-  /** The person whose password was reset. */
+  /** The person an account change was about. */
   target?: string;
+  role?: string;
 }
 
 export interface HistoryEntry {
@@ -401,6 +420,7 @@ export interface ClientToServerEvents {
   "crop:schedule": (cropId: string, times: string[], callback: (result: ControlResult) => void) => void;
   "crop:update": (cropId: string, name: string, icon: CropIconKey, callback: (result: AddCropResult) => void) => void;
   "crop:automation": (cropId: string, rules: AutomationRules, callback: (result: ControlResult) => void) => void;
+  "automation:resume": (zoneId: string, actuator: ManualActuator, callback: (result: ControlResult) => void) => void;
   "crops:reorder": (cropIds: string[], callback: (result: ControlResult) => void) => void;
   "crop:remove": (cropId: string, callback: (result: RemoveCropResult) => void) => void;
   "pump:stop": (zoneId: string, callback: (result: ControlResult) => void) => void;

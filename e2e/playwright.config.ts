@@ -1,12 +1,13 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "@playwright/test";
+import { PORT_ENV, WEB_ORIGIN, WEB_PORT } from "./ports";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
 /**
- * Every spec starts its own backend and simulator on the app's fixed ports (see stack.ts), so
- * tests run one at a time and those ports must be free. Stop `bun run dev` first.
+ * Every spec starts its own backend and simulator (see stack.ts), so tests run one at a time.
+ * They use their own ports (see ports.ts), so `bun run dev` can stay running.
  */
 export default defineConfig({
   testDir: here,
@@ -16,7 +17,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: [["list"]],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: WEB_ORIGIN,
     channel: "chrome",
     trace: "retain-on-failure",
   },
@@ -30,7 +31,8 @@ export default defineConfig({
     // screenshots, so they don't show the development indicator.
     command: process.env.TERRANOVA_PRODUCTION ? "bun run build && bun run start" : "bun run dev",
     cwd: join(here, "../apps/web"),
-    url: "http://127.0.0.1:3000/ko/login",
+    url: `http://127.0.0.1:${WEB_PORT}/ko/login`,
+    env: PORT_ENV,
     reuseExistingServer: false,
     stdout: process.env.E2E_LOG_DIR ? "pipe" : "ignore",
     stderr: process.env.E2E_LOG_DIR ? "pipe" : "ignore",

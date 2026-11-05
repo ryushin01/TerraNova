@@ -1,13 +1,5 @@
-import type { Page } from "@playwright/test";
-import { createAdmin, expect, Farm, signIn, test, useStack } from "./fixtures";
-
-const expectNoSideScroll = async (page: Page) => {
-  const { inner, scroll } = await page.evaluate(() => ({
-    inner: innerWidth,
-    scroll: document.documentElement.scrollWidth,
-  }));
-  expect(scroll).toBe(inner);
-};
+import { createAdmin, expect, expectFitsScreen, Farm, signIn, test, useStack } from "./fixtures";
+import { WEB_PORT } from "./ports";
 
 test.describe.configure({ mode: "serial" });
 
@@ -23,7 +15,7 @@ test.describe("screen sizes and languages", () => {
     test("every page fits and the grid is one column", async ({ page }) => {
       const farm = new Farm(page);
       await farm.open();
-      await expectNoSideScroll(page);
+      await expectFitsScreen(page);
       const columns = await page
         .locator("ul")
         .first()
@@ -31,7 +23,33 @@ test.describe("screen sizes and languages", () => {
       expect(columns).toBe(1);
       await page.goto("/ko/users");
       await expect(page.locator("[data-user]").first()).toBeVisible();
-      await expectNoSideScroll(page);
+      await expectFitsScreen(page);
+    });
+    test("the header fits, and language and theme are in the menu", async ({ page }) => {
+      const farm = new Farm(page);
+      await farm.open();
+      const open = page.getByRole("button", { name: "메뉴 열기" });
+      await expect(open).toBeInViewport({ ratio: 1 });
+
+      await open.tap();
+      const drawer = page.getByRole("dialog");
+      await drawer.getByRole("button", { name: "다크 모드" }).tap();
+      await expect(page.locator("html")).toHaveClass(/dark/);
+      await expect(drawer.getByRole("button", { name: "라이트 모드" })).toBeVisible();
+      await drawer.getByRole("button", { name: "라이트 모드" }).tap();
+      await expect(page.locator("html")).toHaveClass(/light/);
+
+      await drawer.getByRole("link", { name: "English" }).tap();
+      await expect(page).toHaveURL(/\/en\/?$/);
+      await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    });
+
+    test("nothing runs off the narrowest common screen", async ({ page }) => {
+      await page.setViewportSize({ width: 320, height: 640 });
+      const farm = new Farm(page);
+      await farm.open();
+      await expectFitsScreen(page);
+      await expect(page.getByRole("button", { name: "메뉴 열기" })).toBeInViewport({ ratio: 1 });
     });
   });
 
@@ -47,7 +65,7 @@ test.describe("screen sizes and languages", () => {
         .first()
         .evaluate((list) => getComputedStyle(list).gridTemplateColumns.split(" ").length);
       expect(columns).toBe(2);
-      await expectNoSideScroll(page);
+      await expectFitsScreen(page);
     });
   });
 
@@ -86,5 +104,5 @@ test("the web server only listens on this computer", async () => {
     .flat()
     .find((address) => address && address.family === "IPv4" && !address.internal)?.address;
   test.skip(!lan, "no network interface");
-  await expect(fetch(`http://${lan}:3000/ko/login`, { signal: AbortSignal.timeout(2000) })).rejects.toThrow();
+  await expect(fetch(`http://${lan}:${WEB_PORT}/ko/login`, { signal: AbortSignal.timeout(2000) })).rejects.toThrow();
 });

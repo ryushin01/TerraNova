@@ -627,6 +627,46 @@ describe("control history", () => {
     expect(JSON.stringify(await entries("?limit=100"))).not.toContain(changed);
   });
 
+  test("account changes record who and whose", async () => {
+    const admin = await signIn("admin@terranova.test");
+    const made = await post(
+      "/api/auth/admin/create-user",
+      { name: "Audited", email: "audited@terranova.test", password: PASSWORD, role: "viewer" },
+      { cookie: admin },
+    );
+    const userId = ((await made.json()) as { user: { id: string } }).user.id;
+    const created = await firstEntry("?action=account_create", (e) => e.detail.target === "Audited");
+    expect(created).toMatchObject({ actorName: "Admin", result: "ok", detail: { role: "viewer" } });
+
+    await post("/api/auth/admin/set-role", { userId, role: "operator" }, { cookie: admin });
+    const changed = await firstEntry("?action=role_change", (e) => e.detail.target === "Audited");
+    expect(changed.detail.role).toBe("operator");
+
+    await post("/api/auth/admin/set-role", { userId, role: "admin" }, { cookie: operatorCookie });
+    await firstEntry("?action=role_change", (e) => e.actorName === "Operator" && e.result === "forbidden");
+
+    await post("/api/auth/admin/remove-user", { userId }, { cookie: admin });
+    const removed = await firstEntry("?action=account_remove", (e) => e.detail.target === "Audited");
+    expect(removed.result).toBe("ok");
+    expect(JSON.stringify(created)).not.toContain(PASSWORD);
+  });
+
+  test("resuming automation is recorded and refused for viewers", async () => {
+    expect(await new Promise((r) => socket.emit("automation:resume", "zone-a", "vent", r))).toEqual({ ok: true });
+    await firstEntry("?action=automation_resume&zone=zone-a", (e) => e.detail.actuator === "vent");
+    expect(await new Promise((r) => socket.emit("automation:resume", "zone-a", "pump" as never, r))).toEqual({
+      ok: false,
+      error: "invalid",
+    });
+    const viewer = connect(await signIn("viewer@terranova.test"));
+    await until(() => viewer.connected);
+    expect(await new Promise((r) => viewer.emit("automation:resume", "zone-a", "vent", r))).toEqual({
+      ok: false,
+      error: "forbidden",
+    });
+    viewer.close();
+  });
+
   test("only admins and operators can read it, and bad queries are refused", async () => {
     expect((await read("")).status).toBe(401);
     expect((await read("better-auth.session_token=forged.value")).status).toBe(401);

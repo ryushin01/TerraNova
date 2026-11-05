@@ -1,4 +1,5 @@
-import { createAdmin, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
+import { createAdmin, createUser, expect, expectFitsScreen, Farm, signIn, test, useStack } from "./fixtures";
+import { WEB_ORIGIN } from "./ports";
 
 test.describe.configure({ mode: "serial" });
 
@@ -33,9 +34,10 @@ test.describe("sensor history", () => {
     await page.getByText("1시간", { exact: true }).click();
     const chart = page.locator('[data-sensor-chart="soilMoisturePct"]');
     await expect(chart.locator("[data-sensor-latest]")).toHaveText(/\d/);
-    const plot = (await chart.locator("svg.recharts-surface").boundingBox())!;
-    // The newest bucket can be empty for a moment just after the minute turns.
+    // The newest bucket can be empty for a moment just after the minute turns, and the chart can
+    // move as data loads, so each try measures it again.
     await expect(async () => {
+      const plot = (await chart.locator("svg.recharts-surface").boundingBox())!;
       await page.mouse.move(plot.x + plot.width - 30, plot.y + 40);
       await page.mouse.move(plot.x + plot.width - 10, plot.y + 50);
       await expect(chart.locator("[data-sensor-tooltip]")).toContainText("%", { timeout: 1000 });
@@ -75,7 +77,7 @@ test.describe("sensor history", () => {
       password: "correct-horse-2",
       role: "viewer",
     });
-    const viewer = await browser.newContext({ baseURL: "http://localhost:3000" });
+    const viewer = await browser.newContext({ baseURL: WEB_ORIGIN });
     await signIn(viewer, "viewer@terranova.test", "correct-horse-2");
     expect((await viewer.request.get("/api/sensors?zone=zone-a&range=1h")).status()).toBe(200);
     expect((await viewer.request.get("/api/sensors?zone=nope&range=1h")).status()).toBe(400);
@@ -91,11 +93,7 @@ test.describe("sensor history", () => {
     test("fits the screen", async ({ page }) => {
       await page.goto("/ko/sensors");
       await expect(page.locator('[data-sensor-chart="temperatureC"]')).toBeVisible();
-      const { inner, width } = await page.evaluate(() => ({
-        inner: innerWidth,
-        width: document.documentElement.scrollWidth,
-      }));
-      expect(width).toBe(inner);
+      await expectFitsScreen(page);
     });
   });
 });

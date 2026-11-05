@@ -38,7 +38,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={pretendard.variable}>
+    <html lang={locale} className={pretendard.variable} suppressHydrationWarning>
       <body>
         <NextIntlClientProvider>
           <Provider>

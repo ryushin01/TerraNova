@@ -12,6 +12,8 @@ import type { PushConfig } from "./push";
 const MINUTE = 60_000;
 const env = process.env;
 const webPort = env.WEB_PORT ?? "3000";
+const backendPort = Number(env.BACKEND_PORT ?? DEFAULT_SOCKET_PORT);
+const mqttPort = Number(env.MQTT_PORT ?? DEFAULT_MQTT_PORT);
 
 const dataDir = env.DATA_DIR ?? join(import.meta.dir, "../.data/pglite");
 // PUBLIC_ORIGIN is set in network mode: it makes session cookies HTTPS-only.
@@ -58,7 +60,7 @@ function loadPushKeys(): PushConfig {
   return { publicKey: publicKey!, privateKey: privateKey!, subject: "https://github.com/ryushin01/TerraNova" };
 }
 
-const broker = await startBroker();
+const broker = await startBroker({ port: mqttPort });
 const database = await openDatabase(dataDir);
 const app = await startApp({
   db: database.db,
@@ -68,8 +70,8 @@ const app = await startApp({
     secret: loadAuthSecret(),
     trustedOrigins: webOrigins,
   }),
-  mqttUrl: `mqtt://127.0.0.1:${DEFAULT_MQTT_PORT}`,
-  httpPort: DEFAULT_SOCKET_PORT,
+  mqttUrl: `mqtt://127.0.0.1:${mqttPort}`,
+  httpPort: backendPort,
   allowedOrigins: webOrigins,
   sessionSweepMs: 30_000,
   defaultAlarmTimes: defaultAlarmTimes(),
@@ -89,7 +91,7 @@ const app = await startApp({
     completionGraceMs: 15_000,
   },
 });
-console.log(`[server] MQTT broker on 127.0.0.1:${broker.port}, Socket.IO on 127.0.0.1:${DEFAULT_SOCKET_PORT}`);
+console.log(`[server] MQTT broker on 127.0.0.1:${broker.port}, Socket.IO on 127.0.0.1:${backendPort}`);
 
 const shutdown = async () => {
   // A stuck connection must never leave a background process running after Ctrl+C.

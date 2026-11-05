@@ -3,6 +3,7 @@ import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { createAuth } from "../src/auth";
@@ -142,6 +143,19 @@ describe("upgrading a database", () => {
 
     expect(await sections.setAutomation("tomato", { ventOnAboveC: 30, ventOffBelowC: 25 })).toBe(true);
     expect((await new ControlHistory(database.db).list({ limit: 1 })).entries).toEqual([]);
+    await database.close();
+  });
+
+  test("automation saved before humidity rules existed still works", async () => {
+    const database = await openDatabase(join(tempDir(), "db"));
+    const sections = new ZoneSections(database.db);
+    await sections.init();
+    await database.db.execute(
+      sql`UPDATE crops SET automation = '{"ventOnAboveC":30,"ventOffBelowC":25,"lightOnAt":null,"lightOffAt":null,"soilAlarmBelowPct":null}'::jsonb WHERE id = 'rice'`,
+    );
+    const rice = (await sections.crops()).find((crop) => crop.id === "rice");
+    expect(rice?.automation.ventOnAboveC).toBe(30);
+    expect(rice?.automation.ventOnAboveHumidityPct).toBeNull();
     await database.close();
   });
 

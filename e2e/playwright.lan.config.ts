@@ -3,6 +3,7 @@ import { networkInterfaces, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "@playwright/test";
+import { LAN_PORT, PORT_ENV } from "./ports";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const address = Object.values(networkInterfaces())
@@ -21,7 +22,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: [["list"]],
   use: {
-    baseURL: `https://${address}:8443`,
+    baseURL: `https://${address}:${LAN_PORT}`,
     channel: "chrome",
     ignoreHTTPSErrors: true,
     viewport: { width: 390, height: 844 },
@@ -32,12 +33,14 @@ export default defineConfig({
   webServer: {
     command: "bun run lan",
     cwd: join(here, ".."),
-    url: "https://localhost:8443/ko/login",
+    url: `https://localhost:${LAN_PORT}/ko/login`,
     ignoreHTTPSErrors: true,
     reuseExistingServer: false,
     timeout: 180_000,
     gracefulShutdown: { signal: "SIGTERM", timeout: 4000 },
     env: {
+      ...PORT_ENV,
+      LAN_PORT: String(LAN_PORT),
       DATA_DIR: process.env.TERRANOVA_LAN_DATA,
       SIM_INITIAL_SOIL: "30",
       WATERING_DURATION_SEC: "4",

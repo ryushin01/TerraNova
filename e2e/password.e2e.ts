@@ -4,9 +4,10 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import type { BrowserContext, Page } from "@playwright/test";
 import { ADMIN, createAdmin, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
+import { PORT_ENV, WEB_ORIGIN } from "./ports";
 
 const WORKER = { name: "김작업", email: "worker@terranova.test", password: "correct-horse-2", role: "operator" };
-const ORIGIN = "http://localhost:3000";
+const ORIGIN = WEB_ORIGIN;
 
 const trySignIn = async (context: BrowserContext, email: string, password: string) => {
   const response = await context.request.post("/api/auth/sign-in/email", {
@@ -135,7 +136,7 @@ test.describe("passwords", () => {
   test("the recovery command works once the server is stopped", async ({ context }) => {
     const run = promisify(execFile);
     const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-    const env = { ...process.env, DATA_DIR: stack.dataDir };
+    const env = { ...process.env, ...PORT_ENV, DATA_DIR: stack.dataDir };
 
     await expect(run("bun", ["run", "admin:reset-password", ADMIN.email], { cwd: root, env })).rejects.toThrow(
       /Stop it first/,

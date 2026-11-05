@@ -26,12 +26,20 @@ const toMinutes = (time: string) => {
   return hour! * 60 + minute!;
 };
 
-/** What a rule wants the vent to be, or null to leave it alone between the two temperatures. */
-export function desiredVent(rules: AutomationRules, temperatureC: number): boolean | null {
-  if (rules.ventOnAboveC === null || rules.ventOffBelowC === null) return null;
-  if (temperatureC >= rules.ventOnAboveC) return true;
-  if (temperatureC <= rules.ventOffBelowC) return false;
-  return null;
+/**
+ * What the rules want the vent to be, or null to leave it alone. Either reading being high turns
+ * it on, but it only goes off once every reading with a rule is low, so airing out humidity
+ * can't be undone by a low temperature, or the other way round.
+ */
+export function desiredVent(rules: AutomationRules, temperatureC: number, humidityPct: number): boolean | null {
+  const pairs: [number | null, number | null, number][] = [
+    [rules.ventOnAboveC, rules.ventOffBelowC, temperatureC],
+    [rules.ventOnAboveHumidityPct, rules.ventOffBelowHumidityPct, humidityPct],
+  ];
+  const active = pairs.filter(([on, off]) => on !== null && off !== null) as [number, number, number][];
+  if (active.length === 0) return null;
+  if (active.some(([on, , value]) => value >= on)) return true;
+  return active.every(([, off, value]) => value <= off) ? false : null;
 }
 
 /** Whether the lights should be on now. The window may run past midnight. */
@@ -57,6 +65,13 @@ export class Automation {
     this.pausedUntilMs.set(`${zoneId}|${actuator}`, nowMs + MANUAL_PAUSE_MS);
   }
 
+  /** Hands a held setting back to the rules, right away rather than after the wait. */
+  resume(zoneId: string, actuator: ManualActuator): void {
+    const key = `${zoneId}|${actuator}`;
+    this.pausedUntilMs.delete(key);
+    this.nextAttemptMs.delete(key);
+  }
+
   /** Current holds, so screens can explain why a rule isn't acting. Expired ones are dropped. */
   pauses(nowMs: number): AutomationPauses {
     for (const [key, until] of this.pausedUntilMs) {
@@ -72,7 +87,7 @@ export class Automation {
       const reading = this.deps.liveReading(zoneId, nowMs);
       if (!reading) continue;
 
-      await this.apply(zoneId, "vent", desiredVent(rules, reading.temperatureC), reading, nowMs);
+      await this.apply(zoneId, "vent", desiredVent(rules, reading.temperatureC, reading.humidityPct), reading, nowMs);
       await this.apply(zoneId, "light", desiredLight(rules, minutes), reading, nowMs);
 
       if (rules.soilAlarmBelowPct !== null && reading.soilMoisturePct < rules.soilAlarmBelowPct) {

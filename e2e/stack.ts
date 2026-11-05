@@ -3,9 +3,10 @@ import { mkdirSync, mkdtempSync, openSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { BACKEND_URL, PORT_ENV } from "./ports";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const BACKEND = "http://127.0.0.1:4000";
+const BACKEND = BACKEND_URL;
 
 type Env = Record<string, string>;
 
@@ -17,17 +18,25 @@ function logTarget(dir: string): number | "ignore" {
   return openSync(join(logDir, `${dir.replaceAll("/", "-")}.log`), "a");
 }
 
+/** Processes a test asked to stop, so any other exit can be reported as a crash. */
+const stopping = new WeakSet<ChildProcess>();
+
 function run(dir: string, env: Env): ChildProcess {
   const output = logTarget(dir);
-  return spawn("bun", ["src/index.ts"], {
+  const child = spawn("bun", ["src/index.ts"], {
     cwd: join(root, dir),
-    env: { ...process.env, ...env },
+    env: { ...process.env, ...PORT_ENV, ...env },
     stdio: ["ignore", output, output],
   });
+  child.once("exit", (code, signal) => {
+    if (!stopping.has(child)) console.error(`[e2e] ${dir} exited unexpectedly: code ${code}, signal ${signal}`);
+  });
+  return child;
 }
 
 function stop(child: ChildProcess | null): Promise<void> {
   if (!child || child.exitCode !== null) return Promise.resolve();
+  stopping.add(child);
   return new Promise((resolve) => {
     child.once("exit", () => resolve());
     child.kill("SIGTERM");

@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { createAdmin, expect, Farm, signIn, test, useStack } from "./fixtures";
+import { WEB_ORIGIN } from "./ports";
 
 /**
  * Real service worker and real notifications, with one substitution: the browser's subscription.
@@ -43,7 +44,7 @@ test.describe("alarm notifications", () => {
   });
 
   test("turning them on registers the worker, which shows a pushed alarm", async ({ page, context }) => {
-    await context.grantPermissions(["notifications"], { origin: "http://localhost:3000" });
+    await context.grantPermissions(["notifications"], { origin: WEB_ORIGIN });
     const farm = new Farm(page);
     await farm.open();
 
@@ -53,13 +54,13 @@ test.describe("alarm notifications", () => {
     const cdp = await context.newCDPSession(page);
     const registered = new Promise<string>((resolve) => {
       cdp.on("ServiceWorker.workerRegistrationUpdated", ({ registrations }) => {
-        const worker = registrations.find((registration) => registration.scopeURL.startsWith("http://localhost:3000"));
+        const worker = registrations.find((registration) => registration.scopeURL.startsWith(WEB_ORIGIN));
         if (worker) resolve(worker.registrationId);
       });
     });
     await cdp.send("ServiceWorker.enable");
     await cdp.send("ServiceWorker.deliverPushMessage", {
-      origin: "http://localhost:3000",
+      origin: WEB_ORIGIN,
       registrationId: await registered,
       data: JSON.stringify({ title: "물 줄 시간이에요", body: "A 구역을 확인해 주세요.", tag: "zone-A", url: "/ko" }),
     });
@@ -69,7 +70,7 @@ test.describe("alarm notifications", () => {
   });
 
   test("the menu reflects the state, and they can be turned off", async ({ page, context }) => {
-    await context.grantPermissions(["notifications"], { origin: "http://localhost:3000" });
+    await context.grantPermissions(["notifications"], { origin: WEB_ORIGIN });
     const farm = new Farm(page);
     await farm.open();
     await (await menuItem(farm, "알림 켜기")).click();
@@ -91,7 +92,7 @@ test.describe("alarm notifications", () => {
   });
 
   test("a certificate the browser won't accept explains itself", async ({ page, context }) => {
-    await context.grantPermissions(["notifications"], { origin: "http://localhost:3000" });
+    await context.grantPermissions(["notifications"], { origin: WEB_ORIGIN });
     await page.addInitScript(() => {
       Object.defineProperty(navigator.serviceWorker, "register", {
         value: async () => {

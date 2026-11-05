@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
   rewrites: async () => [
     {
       source: "/api/:path*",
-      destination: `http://127.0.0.1:${DEFAULT_SOCKET_PORT}/api/:path*`,
+      destination: `http://127.0.0.1:${process.env.BACKEND_PORT ?? DEFAULT_SOCKET_PORT}/api/:path*`,
     },
   ],
 };

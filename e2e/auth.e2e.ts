@@ -1,4 +1,5 @@
 import { ADMIN, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
+import { BACKEND_URL, WEB_ORIGIN } from "./ports";
 
 const VIEWER = { name: "조회자", email: "viewer@terranova.test", password: "correct-horse-2", role: "viewer" };
 
@@ -8,7 +9,7 @@ test.describe("accounts", () => {
   const stack = useStack({}, { SIM_INITIAL_SOIL: "30" });
 
   test("a new install leads to setup, which signs the first admin in", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/ko");
     await expect(page).toHaveURL(/\/ko\/setup$/);
     await page.locator('[name="name"]').fill(ADMIN.name);
     await page.locator('[name="email"]').fill(ADMIN.email);
@@ -20,9 +21,9 @@ test.describe("accounts", () => {
 
   test("setup cannot run twice and other origins are refused", async ({ request }) => {
     const data = { name: "X", email: "x@terranova.test", password: "correct-horse-9" };
-    const again = await request.post("/api/setup", { headers: { origin: "http://localhost:3000" }, data });
+    const again = await request.post("/api/setup", { headers: { origin: WEB_ORIGIN }, data });
     expect(again.status()).toBe(409);
-    const noOrigin = await fetch("http://127.0.0.1:4000/api/setup", {
+    const noOrigin = await fetch(`${BACKEND_URL}/api/setup`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(data),
@@ -103,7 +104,7 @@ test.describe("accounts", () => {
     await signIn(context);
     await createUser(context, VIEWER);
 
-    const viewerContext = await browser.newContext({ baseURL: "http://localhost:3000" });
+    const viewerContext = await browser.newContext({ baseURL: WEB_ORIGIN });
     await signIn(viewerContext, VIEWER.email, VIEWER.password);
     const viewerPage = await viewerContext.newPage();
     const farm = new Farm(viewerPage);

@@ -13,8 +13,11 @@ const PUBLIC_PATHS = ["/login", "/setup"];
 export default function proxy(request: NextRequest) {
   const segments = request.nextUrl.pathname.split("/").filter(Boolean);
   const hasLocale = (routing.locales as readonly string[]).includes(segments[0] ?? "");
-  const locale = hasLocale ? segments[0] : routing.defaultLocale;
-  const path = `/${(hasLocale ? segments.slice(1) : segments).join("/")}`;
+  // Without a language in the path, next-intl picks one from the saved choice or the browser's
+  // language. Its redirect comes back here with the language, for the sign-in check below.
+  if (!hasLocale) return intl(request);
+  const locale = segments[0];
+  const path = `/${segments.slice(1).join("/")}`;
 
   if (!PUBLIC_PATHS.includes(path) && !getSessionCookie(request)) {
     return NextResponse.redirect(new URL(`/${locale}/login`, request.url));

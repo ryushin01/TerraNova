@@ -1,4 +1,5 @@
-import { createAdmin, expect, Farm, signIn, test, useStack } from "./fixtures";
+import { createAdmin, expect, expectFitsScreen, Farm, signIn, test, useStack } from "./fixtures";
+import { WEB_ORIGIN } from "./ports";
 
 test.describe.configure({ mode: "serial" });
 
@@ -36,11 +37,7 @@ test.describe("selecting without a mouse", () => {
       await expect(farm.card("zone-a")).toContainText("중지됨");
       await expect(farm.card("zone-b")).toContainText("중지됨");
 
-      const { inner, width } = await page.evaluate(() => ({
-        inner: innerWidth,
-        width: document.documentElement.scrollWidth,
-      }));
-      expect(width).toBe(inner);
+      await expectFitsScreen(page);
 
       await page.locator("[data-select-mode]").tap();
       await expect(box(farm, "zone-a")).toHaveCount(0);
@@ -123,7 +120,7 @@ test.describe("selecting without a mouse", () => {
       password: "correct-horse-2",
       role: "viewer",
     });
-    const viewer = await browser.newContext({ baseURL: "http://localhost:3000" });
+    const viewer = await browser.newContext({ baseURL: WEB_ORIGIN });
     await signIn(viewer, "viewer@terranova.test", "correct-horse-2");
     const page = await viewer.newPage();
     await new Farm(page).open();

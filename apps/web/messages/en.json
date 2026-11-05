@@ -133,7 +133,8 @@
       "watering": "Watering",
       "alarms": "Waiting alarms",
       "soil": "Average soil moisture"
-    }
+    },
+    "automationResume": "Resume automatic control"
   },
   "nav": {
     "users": "Users",
@@ -151,7 +152,9 @@
     "sensors": "Sensor history",
     "navigation": "Main menu",
     "openNavigation": "Open menu",
-    "closeNavigation": "Close menu"
+    "closeNavigation": "Close menu",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode"
   },
   "roles": {
     "admin": "Admin",
@@ -265,7 +268,11 @@
       "crops_reorder": "Change section order",
       "password_change": "Change own password",
       "password_reset": "Reset password for {name}",
-      "automation_change": "Change {section} automatic control"
+      "automation_change": "Change {section} automatic control",
+      "automation_resume": "Resume {device} automatic control",
+      "account_create": "Add account {name}",
+      "account_remove": "Remove account {name}",
+      "role_change": "Change {name} to {role}"
     },
     "filters": {
       "alarm_confirm": "Confirm alarm",
@@ -280,7 +287,11 @@
       "crops_reorder": "Change section order",
       "password_change": "Change password",
       "password_reset": "Reset password",
-      "automation_change": "Change automatic control"
+      "automation_change": "Change automatic control",
+      "automation_resume": "Resume automatic control",
+      "account_create": "Add account",
+      "account_remove": "Remove account",
+      "role_change": "Change role"
     },
     "results": {
       "ok": "Success",
@@ -301,6 +312,10 @@
     "actors": {
       "system": "Automatic control",
       "local": "Recovery command"
+    },
+    "devices": {
+      "vent": "ventilation",
+      "light": "lighting"
     }
   },
   "password": {
@@ -349,10 +364,13 @@
     "lightOff": "Off at",
     "soil": "Soil moisture alarm (below %)",
     "soilHelp": "Below this, an alarm is sent. Watering still needs confirming. Use 69 or less.",
-    "invalid": "Set both ventilation temperatures with \"on\" higher than \"off\", and two different lighting times.",
+    "invalid": "Set each \"on\" and \"off\" value together with \"on\" higher, and two different lighting times.",
     "failed": "Couldn't save. Please try again.",
     "cancel": "Cancel",
-    "save": "Save"
+    "save": "Save",
+    "humidityOn": "On at (% humidity or above)",
+    "humidityOff": "Off at (% humidity or below)",
+    "ventHelp": "Turns on when either reading is high, and off once every set reading is low."
   },
   "errors": {
     "errorTitle": "Something went wrong",
@@ -361,5 +379,64 @@
     "notFoundTitle": "Page not found",
     "notFoundDescription": "The address may have changed, or this page does not exist.",
     "home": "Go to the dashboard"
+  },
+  "cropIcons": {
+    "sprout": "Sprout",
+    "flower": "Flower",
+    "tulip": "Tulip",
+    "lotus": "Lotus",
+    "rose": "Rose",
+    "sunflower": "Sunflower",
+    "wheat": "Wheat",
+    "corn": "Corn",
+    "leaf": "Leaf",
+    "salad": "Salad greens",
+    "herb": "Herb",
+    "cabbage": "Cabbage",
+    "broccoli": "Broccoli",
+    "leek": "Leek",
+    "garlic": "Garlic",
+    "carrot": "Carrot",
+    "beet": "Beet",
+    "roots": "Root vegetable",
+    "potato": "Potato",
+    "tomato": "Tomato",
+    "chili": "Chili",
+    "cucumber": "Cucumber",
+    "bellPepper": "Bell pepper",
+    "eggplant": "Eggplant",
+    "pumpkin": "Pumpkin",
+    "watermelon": "Watermelon",
+    "melon": "Melon",
+    "strawberry": "Strawberry",
+    "berry": "Berry",
+    "apple": "Apple",
+    "pear": "Pear",
+    "grape": "Grape",
+    "citrus": "Citrus",
+    "lemon": "Lemon",
+    "peach": "Peach",
+    "cherry": "Cherry",
+    "banana": "Banana",
+    "pineapple": "Pineapple",
+    "kiwi": "Kiwi",
+    "avocado": "Avocado",
+    "olive": "Olive",
+    "bean": "Bean",
+    "peas": "Peas",
+    "peanut": "Peanut",
+    "sesame": "Sesame",
+    "nut": "Nut",
+    "almond": "Almond",
+    "acorn": "Acorn",
+    "mushroom": "Mushroom",
+    "tea": "Tea",
+    "coffee": "Coffee",
+    "bamboo": "Bamboo",
+    "cactus": "Cactus",
+    "cotton": "Cotton",
+    "hops": "Hops",
+    "grass": "Grass",
+    "tree": "Tree"
   }
 }

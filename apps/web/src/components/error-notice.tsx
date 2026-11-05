@@ -14,7 +14,7 @@ export function ErrorNotice({
   return (
     <Container as="main" maxW="sm" px="4" py={{ base: "16", md: "24" }}>
       <Stack gap="3" align="flex-start">
-        <Heading as="h1" size="xl">
+        <Heading as="h1" fontSize="3xl" fontWeight="800" letterSpacing="-0.02em">
           {title}
         </Heading>
         <Text color="fg.muted">{description}</Text>
