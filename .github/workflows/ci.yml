@@ -37,7 +37,10 @@ jobs:
 
       # 브라우저 테스트는 러너에 설치된 Chrome을 쓴다.
       - run: google-chrome --version
+      # 서버, 시뮬레이터, 웹의 출력을 남겨 간헐적 실패의 원인을 볼 수 있게 한다.
       - run: bun run test:e2e
+        env:
+          E2E_LOG_DIR: ${{ github.workspace }}/e2e/test-results/process-logs
       - run: bun run test:lan
 
       - name: 브라우저 테스트 실패 기록 보관
