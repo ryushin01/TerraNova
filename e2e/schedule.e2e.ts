@@ -11,10 +11,33 @@ function seoulTime(minutesFromNow: number): string {
   }).format(Date.now() + minutesFromNow * 60_000);
 }
 
+/**
+ * The server recovers a slot missed by a restart until its alarm would have expired (30 minutes
+ * by default), so a fresh server starts alarming at once if a default time has just passed. Pick
+ * defaults away from the clock, or the suite fails whenever it runs right after one of them.
+ */
+function defaultsAwayFromNow(): readonly [string, string] {
+  const minutes = (time: string) => {
+    const [hour, minute] = time.split(":").map(Number);
+    return hour! * 60 + minute!;
+  };
+  const now = minutes(seoulTime(0));
+  const isNear = (time: string) => {
+    const sinceSlot = (now - minutes(time) + 1440) % 1440;
+    return sinceSlot <= 40 || sinceSlot >= 1440 - 30;
+  };
+  const pairs = [["07:15", "19:45"], ["01:15", "13:45"]] as const;
+  return pairs.find((pair) => !pair.some(isNear)) ?? pairs[0];
+}
+
+const [FIRST, SECOND] = defaultsAwayFromNow();
+const DEFAULTS = `${FIRST}, ${SECOND}`;
+const AFTER_EDIT = ["06:05", FIRST, "12:30"].sort().join(", ");
+
 test.describe.configure({ mode: "serial" });
 
 test.describe("alarm times", () => {
-  const stack = useStack({ WATERING_TIMES: "07:15,19:45" }, { SIM_INITIAL_SOIL: "30" });
+  const stack = useStack({ WATERING_TIMES: `${FIRST},${SECOND}` }, { SIM_INITIAL_SOIL: "30" });
 
   test.beforeAll(createAdmin);
   test.beforeEach(({ context }) => signIn(context));
@@ -32,12 +55,12 @@ test.describe("alarm times", () => {
   test("sections start with the default times, and cancel changes nothing", async ({ page }) => {
     const farm = new Farm(page);
     await farm.open();
-    await expect(times(farm, "rice")).toContainText("07:15, 19:45");
+    await expect(times(farm, "rice")).toContainText(DEFAULTS);
 
     await openEditor(farm, "rice");
     await addTime(farm, "12:00");
     await page.getByRole("button", { name: "취소" }).click();
-    await expect(times(farm, "rice")).toContainText("07:15, 19:45");
+    await expect(times(farm, "rice")).toContainText(DEFAULTS);
   });
 
   test("times can be added and removed, per section, and survive a restart", async ({ page }) => {
@@ -48,23 +71,23 @@ test.describe("alarm times", () => {
     await addTime(farm, "12:30");
     await addTime(farm, "06:05");
     await expect(page.locator("[data-alarm-time]")).toHaveCount(4);
-    await page.locator('[data-alarm-time="19:45"]').getByRole("button").click();
+    await page.locator(`[data-alarm-time="${SECOND}"]`).getByRole("button").click();
     await page.locator("[data-alarm-times-save]").click();
 
-    await expect(times(farm, "rice")).toContainText("06:05, 07:15, 12:30");
-    await expect(times(farm, "lettuce")).toContainText("07:15, 19:45");
+    await expect(times(farm, "rice")).toContainText(AFTER_EDIT);
+    await expect(times(farm, "lettuce")).toContainText(DEFAULTS);
 
     await stack.restartServer();
     await page.reload();
-    await expect(times(farm, "rice")).toContainText("06:05, 07:15, 12:30");
+    await expect(times(farm, "rice")).toContainText(AFTER_EDIT);
   });
 
   test("removing every time turns the section's alarms off", async ({ page }) => {
     const farm = new Farm(page);
     await farm.open();
     await openEditor(farm, "lettuce");
-    await page.locator('[data-alarm-time="07:15"]').getByRole("button").click();
-    await page.locator('[data-alarm-time="19:45"]').getByRole("button").click();
+    await page.locator(`[data-alarm-time="${FIRST}"]`).getByRole("button").click();
+    await page.locator(`[data-alarm-time="${SECOND}"]`).getByRole("button").click();
     await page.locator("[data-alarm-times-save]").click();
     await expect(times(farm, "lettuce")).toContainText("알람 없음");
   });
@@ -76,8 +99,8 @@ test.describe("alarm times", () => {
     // Far enough ahead that saving can't reach that minute, even on a busy machine.
     const at = seoulTime(new Date().getSeconds() > 30 ? 2 : 1);
     await openEditor(farm, "bellflower");
-    await page.locator('[data-alarm-time="07:15"]').getByRole("button").click();
-    await page.locator('[data-alarm-time="19:45"]').getByRole("button").click();
+    await page.locator(`[data-alarm-time="${FIRST}"]`).getByRole("button").click();
+    await page.locator(`[data-alarm-time="${SECOND}"]`).getByRole("button").click();
     await addTime(farm, at);
     await page.locator("[data-alarm-times-save]").click();
     await expect(times(farm, "bellflower")).toContainText(at);
@@ -111,7 +134,7 @@ test.describe("alarm times", () => {
     await page.locator('[name="crop-name"]').fill("토마토");
     await page.locator("[data-add-crop-submit]").click();
     const section = page.locator("[data-section]", { has: page.getByRole("heading", { name: "토마토" }) });
-    await expect(section.locator("[data-section-times]")).toContainText("07:15, 19:45");
+    await expect(section.locator("[data-section-times]")).toContainText(DEFAULTS);
   });
 
   test("a viewer sees the times but cannot change them", async ({ browser, context }) => {
