@@ -137,6 +137,7 @@
     "automationResume": "Resume automatic control"
   },
   "nav": {
+    "skipToMain": "Skip to main content",
     "users": "Users",
     "dashboard": "Zones",
     "signOut": "Sign out",

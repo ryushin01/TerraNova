@@ -26,6 +26,7 @@ import { LuChevronDown, LuLanguages, LuMenu, LuMoon, LuSprout, LuSun } from "rea
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { ChangePasswordDialog } from "./change-password-dialog";
+import { MAIN_ID } from "./skip-link";
 import { chamfer } from "./theme";
 import { toaster } from "./toaster";
 import { usePush } from "./use-push";
@@ -251,7 +252,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
         </HStack>
       </Flex>
 
-      <Box as="main">
+      <Box as="main" id={MAIN_ID} tabIndex={-1}>
         <Heading
           as="h1"
           fontSize={{ base: "3xl", md: "5xl" }}

@@ -1,5 +1,6 @@
 import { Container, Heading, Stack, Text } from "@chakra-ui/react";
 import type { ReactNode } from "react";
+import { MAIN_ID } from "./skip-link";
 
 /** The shared body of the error and not-found screens: what happened and what to do next. */
 export function ErrorNotice({
@@ -12,7 +13,7 @@ export function ErrorNotice({
   children: ReactNode;
 }) {
   return (
-    <Container as="main" maxW="sm" px="4" py={{ base: "16", md: "24" }}>
+    <Container as="main" id={MAIN_ID} tabIndex={-1} maxW="sm" px="4" py={{ base: "16", md: "24" }}>
       <Stack gap="3" align="flex-start">
         <Heading as="h1" fontSize="3xl" fontWeight="800" letterSpacing="-0.02em">
           {title}
