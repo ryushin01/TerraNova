@@ -7,7 +7,8 @@
     "test:e2e": "playwright test --project=e2e",
     "memory:browser": "TERRANOVA_PRODUCTION=1 playwright test --project=memory",
     "typecheck": "tsc --noEmit",
-    "test:lan": "playwright test --config=playwright.lan.config.ts"
+    "test:lan": "playwright test --config=playwright.lan.config.ts",
+    "docs:screenshots": "TERRANOVA_PRODUCTION=1 playwright test --project=screenshots"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

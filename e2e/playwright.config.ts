@@ -23,13 +23,17 @@ export default defineConfig({
   projects: [
     { name: "e2e", testMatch: "**/*.e2e.ts" },
     { name: "memory", testMatch: "**/*.memory.ts", timeout: 15 * 60_000 },
+    { name: "screenshots", testMatch: "**/*.screenshots.ts" },
   ],
   webServer: {
-    // Memory is measured on a production build: development tooling holds on to memory itself.
+    // A production build for memory, since development tooling holds on to memory itself, and for
+    // screenshots, so they don't show the development indicator.
     command: process.env.TERRANOVA_PRODUCTION ? "bun run build && bun run start" : "bun run dev",
     cwd: join(here, "../apps/web"),
     url: "http://127.0.0.1:3000/ko/login",
     reuseExistingServer: false,
+    stdout: process.env.E2E_LOG_DIR ? "pipe" : "ignore",
+    stderr: process.env.E2E_LOG_DIR ? "pipe" : "ignore",
     timeout: 120_000,
   },
 });
