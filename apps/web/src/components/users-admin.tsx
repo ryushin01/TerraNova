@@ -77,14 +77,8 @@ export function UsersAdmin() {
   const [removing, setRemoving] = useState<UserRow | null>(null);
   const [resetting, setResetting] = useState<UserRow | null>(null);
   const resetForm = useForm({ defaultValues: { "new-password": "" } });
-  const resetBusy = resetForm.formState.isSubmitting;
-  const clearResetForm = resetForm.reset;
-
-  // Clear once closed, so a password never stays in the form state. A reset still running keeps its
-  // submitting state until it ends, so reopening can't send a second one alongside it.
-  useEffect(() => {
-    if (!resetting && !resetBusy) clearResetForm();
-  }, [resetting, resetBusy, clearResetForm]);
+  // Kept outside the form: closing clears the form, but must not let a second reset start alongside one still running.
+  const [resetBusy, setResetBusy] = useState(false);
   const isAdmin = session?.user.role === "admin";
 
   const load = useCallback(async () => {
@@ -124,13 +118,19 @@ export function UsersAdmin() {
     await load();
   };
 
-  const closeReset = () => setResetting(null);
+  // Clear on close, so a password never stays in the form state.
+  const closeReset = () => {
+    resetForm.reset();
+    setResetting(null);
+  };
 
   const resetPassword = resetForm.handleSubmit(async ({ "new-password": newPassword }) => {
     if (!resetting) return;
+    setResetBusy(true);
     const result = await authClient.admin.setUserPassword({ userId: resetting.id, newPassword });
     // The old password may be why this was needed, so nobody keeps a sign-in made with it.
     const revoked = result.error ? null : await authClient.admin.revokeUserSessions({ userId: resetting.id });
+    setResetBusy(false);
     if (result.error || revoked?.error) {
       toaster.create({ type: "error", title: t("resetFailed") });
       return;

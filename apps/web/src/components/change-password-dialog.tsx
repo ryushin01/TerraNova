@@ -2,7 +2,7 @@
 
 import { Button, Dialog, Field, Input, Portal, Stack } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { authClient } from "@/lib/auth-client";
 import { toaster } from "./toaster";
@@ -14,24 +14,24 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
     handleSubmit,
     reset,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm({ defaultValues: { current: "", next: "", confirm: "" } });
   const error = errors.confirm?.message ?? errors.root?.server?.message;
 
-  // Clear once closed, so a password never stays in the form state. A save still running keeps its
-  // submitting state until it ends, so reopening can't send a second one alongside it.
-  useEffect(() => {
-    if (!open && !isSubmitting) reset();
-  }, [open, isSubmitting, reset]);
+  // Kept outside the form: closing clears the form, but must not let a second save start alongside one still running.
+  const [saving, setSaving] = useState(false);
 
-  const close = onClose;
+  // Clear on close, so a password never stays in the form state.
+  const close = () => {
+    reset();
+    onClose();
+  };
 
   const submit = handleSubmit(async ({ current, next }) => {
-    const result = await authClient.changePassword({
-      currentPassword: current,
-      newPassword: next,
-      revokeOtherSessions: true,
-    });
+    setSaving(true);
+    const result = await authClient
+      .changePassword({ currentPassword: current, newPassword: next, revokeOtherSessions: true })
+      .finally(() => setSaving(false));
     if (result.error) {
       setError("root.server", {
         message: result.error.status === 429 ? t("tooMany") : t("changeFailed"),
@@ -87,7 +87,7 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
                 <Button type="button" variant="outline" onClick={close}>
                   {t("cancel")}
                 </Button>
-                <Button type="submit" data-change-password-submit loading={isSubmitting}>
+                <Button type="submit" data-change-password-submit loading={saving}>
                   {t("save")}
                 </Button>
               </Dialog.Footer>

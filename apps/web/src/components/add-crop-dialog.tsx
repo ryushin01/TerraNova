@@ -3,7 +3,7 @@
 import { Button, Center, Dialog, Field, Grid, IconButton, Input, Portal, Stack, Text } from "@chakra-ui/react";
 import { type AddCropResult, type CropIconKey, suggestCropIcon } from "@terranova/shared";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { CROP_ICON_CHOICES, CropIcon } from "./crops";
 
@@ -26,11 +26,11 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
     reset,
     setError,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm({ defaultValues: { name: "" } });
   const name = watch("name");
-  const saving = useRef(false);
-  saving.current = isSubmitting;
+  // Kept outside the form: reopening resets the form, but must not let a second save start alongside one still running.
+  const [saving, setSaving] = useState(false);
   /** Null means the icon follows the name. It stops once someone picks one by hand. */
   const [chosenIcon, setChosenIcon] = useState<CropIconKey | null>(null);
   const error = errors.name?.message;
@@ -38,26 +38,23 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
   // An edit starts from the crop's icon, so renaming doesn't swap it behind someone's back.
   useEffect(() => {
     if (!open) return;
-    // Resetting would forget a save still running, and reopening could then send a second one.
-    if (saving.current) return;
     reset({ name: editing?.name ?? "" });
     setChosenIcon(editing?.icon ?? null);
   }, [open, editing, reset]);
 
-  useEffect(() => {
-    if (open || isSubmitting) return;
-    reset({ name: "" });
-    setChosenIcon(null);
-  }, [open, isSubmitting, reset]);
-
   const icon = chosenIcon ?? suggestCropIcon(name);
   const trimmed = name.trim();
 
-  const close = onClose;
+  const close = () => {
+    reset({ name: "" });
+    setChosenIcon(null);
+    onClose();
+  };
 
   const submit = handleSubmit(async () => {
     if (!trimmed) return;
-    const result = await onSubmit(trimmed, icon);
+    setSaving(true);
+    const result = await onSubmit(trimmed, icon).finally(() => setSaving(false));
     if (result.ok) close();
     else setError("name", { message: t(result.error === "duplicate" ? "duplicate" : "failed") });
   });
@@ -137,7 +134,7 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
                 <Button type="button" variant="outline" onClick={close}>
                   {t("cancel")}
                 </Button>
-                <Button type="submit" data-add-crop-submit loading={isSubmitting} disabled={!trimmed}>
+                <Button type="submit" data-add-crop-submit loading={saving} disabled={!trimmed}>
                   {t(editing ? "save" : "add")}
                 </Button>
               </Dialog.Footer>
