@@ -1,4 +1,4 @@
-import { Farm, createAdmin, expect, signIn, test, useStack } from "./fixtures";
+import { createAdmin, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 
@@ -50,7 +50,11 @@ test.describe("watering on dry soil", () => {
     await farm.confirmButton().click();
     await farm.expectLook("zone-c", "watering");
     const delay = (index: number) =>
-      farm.card("zone-c").locator("[data-cell]").nth(index).evaluate((cell) => getComputedStyle(cell).animationDelay);
+      farm
+        .card("zone-c")
+        .locator("[data-cell]")
+        .nth(index)
+        .evaluate((cell) => getComputedStyle(cell).animationDelay);
     expect(await delay(0)).not.toBe(await delay(9));
     await page.locator('[data-stop="zone-c"]').click();
     await expect(farm.card("zone-c")).toContainText("중지됨");
@@ -147,7 +151,10 @@ test.describe("watering on wet soil", () => {
     await farm.expectLook("zone-a", "wet");
 
     await farm.plot("zone-a").click({ button: "right" });
-    await expect(farm.menuItem(farm.zoneMenu("zone-a"), "물 주기 (토양 수분 충분)")).toHaveAttribute("aria-disabled", "true");
+    await expect(farm.menuItem(farm.zoneMenu("zone-a"), "물 주기 (토양 수분 충분)")).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
     await page.keyboard.press("Escape");
 
     await stack.triggerAlarm("zone-a");

@@ -55,7 +55,11 @@ describe("alarm times", () => {
     const s = withDefaults();
     const now = new Date("2026-11-05T00:00:00Z");
     expect(await s.setAlarmTimes("rice", ["18:30", "06:00", "18:30"], now)).toBe(true);
-    expect(await scheduleOf(s, "zone-c")).toEqual({ zoneId: "zone-c", times: ["06:00", "18:30"], updatedAtMs: now.getTime() });
+    expect(await scheduleOf(s, "zone-c")).toEqual({
+      zoneId: "zone-c",
+      times: ["06:00", "18:30"],
+      updatedAtMs: now.getTime(),
+    });
     expect((await scheduleOf(s, "zone-a"))?.times).toEqual(["08:00", "18:00"]);
   });
 
@@ -135,7 +139,10 @@ describe("editing crops", () => {
     const s = new ZoneSections(database.db, ["08:00"]);
     await s.setAlarmTimes("rice", ["05:00"]);
     const outcome = await s.updateCrop("rice", "  찹쌀 벼 ", "corn");
-    expect(outcome).toMatchObject({ previousName: "벼", crop: { id: "rice", name: "찹쌀 벼", icon: "corn", alarmTimes: ["05:00"] } });
+    expect(outcome).toMatchObject({
+      previousName: "벼",
+      crop: { id: "rice", name: "찹쌀 벼", icon: "corn", alarmTimes: ["05:00"] },
+    });
     expect((await s.assignments())["zone-c"]).toBe("rice");
   });
 

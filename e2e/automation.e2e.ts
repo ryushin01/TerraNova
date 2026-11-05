@@ -1,4 +1,4 @@
-import { Farm, createAdmin, expect, signIn, test, useStack } from "./fixtures";
+import { createAdmin, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 
@@ -59,6 +59,17 @@ test.describe("automatic control", () => {
     await page.waitForTimeout(5000);
     await expect(farm.switchInput("zone-c", "vent")).not.toBeChecked();
     await expect(farm.switchInput("zone-d", "vent")).toBeChecked();
+
+    // The screen explains why the rule isn't acting, only where a rule applies.
+    const note = farm.card("zone-c").locator('[data-automation-paused="vent"]');
+    await expect(note).toContainText("자동 제어 중지");
+    await expect(farm.card("zone-d").locator("[data-automation-paused]")).toHaveCount(0);
+    await farm.toggle("zone-a", "vent");
+    await expect(farm.switchInput("zone-a", "vent")).toBeChecked();
+    await expect(farm.card("zone-a").locator("[data-automation-paused]")).toHaveCount(0);
+
+    await page.reload();
+    await expect(note).toBeVisible();
   });
 
   test("a light window turns lighting on, and saved rules come back into the form", async ({ page }) => {

@@ -14,7 +14,7 @@ const root = mkdtempSync(join(tmpdir(), "terranova-reset-"));
 const dataDir = join(root, "db");
 const script = join(import.meta.dir, "../src/reset-password.ts");
 
-const withAuth = async <T,>(use: (auth: ReturnType<typeof createAuth>) => Promise<T>): Promise<T> => {
+const withAuth = async <T>(use: (auth: ReturnType<typeof createAuth>) => Promise<T>): Promise<T> => {
   const database = await openDatabase(dataDir);
   try {
     return await use(

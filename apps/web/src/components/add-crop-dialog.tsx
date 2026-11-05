@@ -1,9 +1,9 @@
 "use client";
 
 import { Button, Center, Dialog, Field, Grid, Icon, IconButton, Input, Portal, Stack, Text } from "@chakra-ui/react";
-import { CROP_ICON_KEYS, suggestCropIcon, type AddCropResult, type CropIconKey } from "@terranova/shared";
+import { type AddCropResult, CROP_ICON_KEYS, type CropIconKey, suggestCropIcon } from "@terranova/shared";
 import { useTranslations } from "next-intl";
-import { useEffect, useState, type FormEvent } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { CROP_ICONS } from "./crops";
 
 const MAX_NAME_LENGTH = 30;

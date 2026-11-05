@@ -1,12 +1,5 @@
+import { type CommandAck, isActuator, parseCommand, topics, ZONE_IDS, type ZoneStatus } from "@terranova/shared";
 import mqtt from "mqtt";
-import {
-  ZONE_IDS,
-  isActuator,
-  parseCommand,
-  topics,
-  type CommandAck,
-  type ZoneStatus,
-} from "@terranova/shared";
 import { ZoneDevice } from "./device";
 
 export interface SimulatorOptions {
@@ -18,8 +11,7 @@ export interface SimulatorOptions {
   initialSoil?: number;
 }
 
-const statusPayload = (zoneId: string, online: boolean) =>
-  JSON.stringify({ zoneId, online } satisfies ZoneStatus);
+const statusPayload = (zoneId: string, online: boolean) => JSON.stringify({ zoneId, online } satisfies ZoneStatus);
 
 /**
  * One MQTT connection per zone, so a Last Will reports each zone offline independently,

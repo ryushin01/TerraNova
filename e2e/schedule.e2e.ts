@@ -1,4 +1,4 @@
-import { Farm, createAdmin, createUser, expect, signIn, test, useStack } from "./fixtures";
+import { createAdmin, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 /** Local time in the farm's time zone, a number of minutes from now. */
 function seoulTime(minutesFromNow: number): string {
@@ -115,7 +115,12 @@ test.describe("alarm times", () => {
 
   test("a viewer sees the times but cannot change them", async ({ browser, context }) => {
     await signIn(context);
-    await createUser(context, { name: "조회자", email: "viewer@terranova.test", password: "correct-horse-2", role: "viewer" });
+    await createUser(context, {
+      name: "조회자",
+      email: "viewer@terranova.test",
+      password: "correct-horse-2",
+      role: "viewer",
+    });
     const viewerContext = await browser.newContext({ baseURL: "http://localhost:3000" });
     await signIn(viewerContext, "viewer@terranova.test", "correct-horse-2");
     const page = await viewerContext.newPage();

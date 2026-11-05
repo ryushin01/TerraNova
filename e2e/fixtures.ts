@@ -1,4 +1,4 @@
-import { expect, test as base, type BrowserContext, type Locator, type Page } from "@playwright/test";
+import { type BrowserContext, test as base, expect, type Locator, type Page } from "@playwright/test";
 import { Stack } from "./stack";
 
 const ORIGIN = "http://localhost:3000";
@@ -52,7 +52,10 @@ export async function signIn(context: BrowserContext, email = ADMIN.email, passw
   expect(response.status()).toBe(200);
 }
 
-export async function createUser(context: BrowserContext, user: { name: string; email: string; password: string; role: string }) {
+export async function createUser(
+  context: BrowserContext,
+  user: { name: string; email: string; password: string; role: string },
+) {
   const response = await context.request.post("/api/auth/admin/create-user", {
     headers: { origin: ORIGIN },
     data: user,

@@ -1,11 +1,5 @@
 import { randomUUID } from "node:crypto";
-import {
-  topics,
-  type Actuator,
-  type CommandAck,
-  type ControlResult,
-  type ManualActuator,
-} from "@terranova/shared";
+import { type Actuator, type CommandAck, type ControlResult, type ManualActuator, topics } from "@terranova/shared";
 import type { ZoneRegistry } from "./zones";
 
 interface ControlDeps {

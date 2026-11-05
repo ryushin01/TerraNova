@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, spyOn, test } from "bun:test";
 import { openDatabase } from "../src/db";
 import { controlEvents } from "../src/db/schema";
-import { ControlHistory, outcomeOf, type Actor } from "../src/history";
+import { type Actor, ControlHistory, outcomeOf } from "../src/history";
 
 const OPERATOR: Actor = { id: "u1", name: "김작업", role: "operator" };
 
@@ -73,10 +73,9 @@ test("records past 90 days are removed and newer ones stay", async () => {
     detail: {},
     result: "ok",
   });
-  await database.db.insert(controlEvents).values([
-    row("2026-08-06T23:59:00Z", "old"),
-    row("2026-08-07T00:01:00Z", "kept"),
-  ]);
+  await database.db
+    .insert(controlEvents)
+    .values([row("2026-08-06T23:59:00Z", "old"), row("2026-08-07T00:01:00Z", "kept")]);
   await history.prune(now);
   expect((await history.list({ limit: 10 })).entries.map((e) => e.zoneId)).toEqual(["kept"]);
 });

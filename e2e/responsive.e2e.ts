@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { Farm, createAdmin, expect, signIn, test, useStack } from "./fixtures";
+import { createAdmin, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 const expectNoSideScroll = async (page: Page) => {
   const { inner, scroll } = await page.evaluate(() => ({
@@ -24,7 +24,10 @@ test.describe("screen sizes and languages", () => {
       const farm = new Farm(page);
       await farm.open();
       await expectNoSideScroll(page);
-      const columns = await page.locator("ul").first().evaluate((list) => getComputedStyle(list).gridTemplateColumns.split(" ").length);
+      const columns = await page
+        .locator("ul")
+        .first()
+        .evaluate((list) => getComputedStyle(list).gridTemplateColumns.split(" ").length);
       expect(columns).toBe(1);
       await page.goto("/ko/users");
       await expect(page.locator("[data-user]").first()).toBeVisible();
@@ -39,7 +42,10 @@ test.describe("screen sizes and languages", () => {
       const farm = new Farm(page);
       await farm.open("/en");
       await expect(page.getByText("Soil moisture").first()).toBeVisible();
-      const columns = await page.locator("ul").first().evaluate((list) => getComputedStyle(list).gridTemplateColumns.split(" ").length);
+      const columns = await page
+        .locator("ul")
+        .first()
+        .evaluate((list) => getComputedStyle(list).gridTemplateColumns.split(" ").length);
       expect(columns).toBe(2);
       await expectNoSideScroll(page);
     });

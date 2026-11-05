@@ -1,4 +1,4 @@
-import type { AutomationRules, ControlResult, ManualActuator, Telemetry } from "@terranova/shared";
+import type { AutomationPauses, AutomationRules, ControlResult, ManualActuator, Telemetry } from "@terranova/shared";
 
 const COOLDOWN_MS = 60_000;
 const MANUAL_PAUSE_MS = 30 * 60_000;
@@ -55,6 +55,14 @@ export class Automation {
   /** Someone chose this setting by hand, so rules leave it alone for a while. */
   noteManualChange(zoneId: string, actuator: ManualActuator, nowMs: number): void {
     this.pausedUntilMs.set(`${zoneId}|${actuator}`, nowMs + MANUAL_PAUSE_MS);
+  }
+
+  /** Current holds, so screens can explain why a rule isn't acting. Expired ones are dropped. */
+  pauses(nowMs: number): AutomationPauses {
+    for (const [key, until] of this.pausedUntilMs) {
+      if (until <= nowMs) this.pausedUntilMs.delete(key);
+    }
+    return Object.fromEntries([...this.pausedUntilMs].map(([key, until]) => [key, new Date(until).toISOString()]));
   }
 
   async tick(nowMs: number): Promise<void> {

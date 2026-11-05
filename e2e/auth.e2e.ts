@@ -1,4 +1,4 @@
-import { ADMIN, Farm, createUser, expect, signIn, test, useStack } from "./fixtures";
+import { ADMIN, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 const VIEWER = { name: "조회자", email: "viewer@terranova.test", password: "correct-horse-2", role: "viewer" };
 
@@ -114,7 +114,9 @@ test.describe("accounts", () => {
     await stack.triggerAlarm("zone-d");
     await expect(viewerPage.getByText("D 구역에 물을 줄 시간이에요")).toBeVisible();
     await expect(farm.confirmButton()).toHaveCount(0);
-    await expect(viewerPage.locator("[data-section-water], [data-section-menu], [data-add-crop], [data-menu-button]")).toHaveCount(0);
+    await expect(
+      viewerPage.locator("[data-section-water], [data-section-menu], [data-add-crop], [data-menu-button]"),
+    ).toHaveCount(0);
     await expect(farm.switchInput("zone-a", "vent")).toBeDisabled();
 
     await farm.field("zone-a").click({ button: "right" });

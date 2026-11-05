@@ -1,8 +1,8 @@
+import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
-import { execFileSync } from "node:child_process";
-import { Farm, createAdmin, createUser, expect, signIn, test, useStack } from "./fixtures";
+import { createAdmin, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
 import { Stack } from "./stack";
 
 const images = join(dirname(fileURLToPath(import.meta.url)), "../docs/images");
@@ -103,8 +103,18 @@ test.describe("README screenshots", () => {
     });
 
     test("users", async ({ page, context }) => {
-      await createUser(context, { name: "김작업", email: "operator@terranova.test", password: "correct-horse-2", role: "operator" });
-      await createUser(context, { name: "이조회", email: "viewer@terranova.test", password: "correct-horse-3", role: "viewer" });
+      await createUser(context, {
+        name: "김작업",
+        email: "operator@terranova.test",
+        password: "correct-horse-2",
+        role: "operator",
+      });
+      await createUser(context, {
+        name: "이조회",
+        email: "viewer@terranova.test",
+        password: "correct-horse-3",
+        role: "viewer",
+      });
       await page.setViewportSize({ width: 1440, height: 700 });
       await page.goto("/ko/users");
       await expect(page.locator('[data-user="viewer@terranova.test"]')).toBeVisible();

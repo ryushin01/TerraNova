@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
+import { type CommandAck, type Telemetry, topics, type ZoneStatus } from "@terranova/shared";
 import mqtt, { type MqttClient } from "mqtt";
 import { startBroker } from "../../server/src/broker";
-import { topics, type CommandAck, type Telemetry, type ZoneStatus } from "@terranova/shared";
 import { startSimulator } from "../src/simulator";
 
 const PORT = 18830;
@@ -29,7 +29,9 @@ function waitFor<T>(find: () => T | undefined, timeoutMs = 4000): Promise<T> {
 }
 
 const findAck = (commandId: string, status: CommandAck["status"]) => () =>
-  received.find((m) => m.topic === topics.ack("zone-a", "pump") && m.body.commandId === commandId && m.body.status === status)?.body as CommandAck | undefined;
+  received.find(
+    (m) => m.topic === topics.ack("zone-a", "pump") && m.body.commandId === commandId && m.body.status === status,
+  )?.body as CommandAck | undefined;
 
 beforeAll(async () => {
   broker = await startBroker({ port: PORT });
@@ -50,16 +52,24 @@ afterAll(async () => {
 });
 
 test("publishes online status and telemetry for a zone", async () => {
-  const status = await waitFor(() => received.find((m) => m.topic === topics.status("zone-a") && m.body.online)?.body as ZoneStatus | undefined);
+  const status = await waitFor(
+    () => received.find((m) => m.topic === topics.status("zone-a") && m.body.online)?.body as ZoneStatus | undefined,
+  );
   expect(status.online).toBe(true);
 
-  const telemetry = await waitFor(() => received.find((m) => m.topic === topics.telemetry("zone-a"))?.body as Telemetry | undefined);
+  const telemetry = await waitFor(
+    () => received.find((m) => m.topic === topics.telemetry("zone-a"))?.body as Telemetry | undefined,
+  );
   expect(telemetry.zoneId).toBe("zone-a");
   expect(telemetry.actuators.pump).toBe(false);
 });
 
 test("runs a pump command over MQTT and reports the real outcome", async () => {
-  await client.publishAsync(topics.command("zone-a", "pump"), JSON.stringify({ commandId: "e2e-1", action: "on", durationSec: 0.3 }), { qos: 1 });
+  await client.publishAsync(
+    topics.command("zone-a", "pump"),
+    JSON.stringify({ commandId: "e2e-1", action: "on", durationSec: 0.3 }),
+    { qos: 1 },
+  );
   await waitFor(findAck("e2e-1", "accepted"));
   const completed = await waitFor(findAck("e2e-1", "completed"));
   expect(completed.reason).toBe("duration_elapsed");
@@ -67,14 +77,18 @@ test("runs a pump command over MQTT and reports the real outcome", async () => {
 
 test("ignores malformed commands and keeps serving", async () => {
   await client.publishAsync(topics.command("zone-a", "pump"), "not json", { qos: 1 });
-  await client.publishAsync(topics.command("zone-a", "pump"), JSON.stringify({ commandId: "e2e-2", action: "off" }), { qos: 1 });
+  await client.publishAsync(topics.command("zone-a", "pump"), JSON.stringify({ commandId: "e2e-2", action: "off" }), {
+    qos: 1,
+  });
   await waitFor(findAck("e2e-2", "completed"));
 });
 
 test("stopping marks zones offline", async () => {
   received.length = 0;
   await simulator.stop();
-  const status = await waitFor(() => received.find((m) => m.topic === topics.status("zone-b") && !m.body.online)?.body as ZoneStatus | undefined);
+  const status = await waitFor(
+    () => received.find((m) => m.topic === topics.status("zone-b") && !m.body.online)?.body as ZoneStatus | undefined,
+  );
   expect(status.online).toBe(false);
 });
 

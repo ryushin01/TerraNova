@@ -4,7 +4,10 @@ import { useLocale } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
 const urlKeyToBytes = (key: string) => {
-  const base64 = key.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(key.length / 4) * 4, "=");
+  const base64 = key
+    .replace(/-/g, "+")
+    .replace(/_/g, "/")
+    .padEnd(Math.ceil(key.length / 4) * 4, "=");
   return Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
 };
 

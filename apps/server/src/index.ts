@@ -1,13 +1,13 @@
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEFAULT_MQTT_PORT, DEFAULT_SOCKET_PORT, SOIL_SUFFICIENT_PCT, normalizeAlarmTimes } from "@terranova/shared";
+import { DEFAULT_MQTT_PORT, DEFAULT_SOCKET_PORT, normalizeAlarmTimes, SOIL_SUFFICIENT_PCT } from "@terranova/shared";
 import webpush from "web-push";
 import { startApp } from "./app";
-import type { PushConfig } from "./push";
 import { createAuth } from "./auth";
 import { startBroker } from "./broker";
 import { openDatabase } from "./db";
+import type { PushConfig } from "./push";
 
 const MINUTE = 60_000;
 const env = process.env;
@@ -37,7 +37,12 @@ function loadAuthSecret(): string {
 /** Times for sections nobody has changed yet. An empty value means no scheduled alarms. */
 function defaultAlarmTimes(): string[] {
   const value = env.WATERING_TIMES ?? "08:00,18:00";
-  const times = normalizeAlarmTimes(value.split(",").map((time) => time.trim()).filter(Boolean));
+  const times = normalizeAlarmTimes(
+    value
+      .split(",")
+      .map((time) => time.trim())
+      .filter(Boolean),
+  );
   if (!times) throw new Error(`WATERING_TIMES must be HH:mm values separated by commas: ${value}`);
   return times;
 }

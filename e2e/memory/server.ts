@@ -9,7 +9,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ZONE_IDS, type ClientToServerEvents, type ServerToClientEvents } from "@terranova/shared";
+import { type ClientToServerEvents, type ServerToClientEvents, ZONE_IDS } from "@terranova/shared";
 import { io, type Socket } from "socket.io-client";
 import { startApp } from "../../apps/server/src/app";
 import { createAuth } from "../../apps/server/src/auth";
@@ -29,7 +29,12 @@ const dataRoot = mkdtempSync(join(tmpdir(), "terranova-memory-"));
 
 const broker = await startBroker({ port: MQTT_PORT });
 const database = await openDatabase(join(dataRoot, "db"));
-const auth = createAuth({ db: database.db, baseURL: ORIGIN, secret: crypto.randomUUID().repeat(2), trustedOrigins: [ORIGIN] });
+const auth = createAuth({
+  db: database.db,
+  baseURL: ORIGIN,
+  secret: crypto.randomUUID().repeat(2),
+  trustedOrigins: [ORIGIN],
+});
 const app = await startApp({
   db: database.db,
   auth,
@@ -55,12 +60,24 @@ const app = await startApp({
 const simulator = startSimulator({ brokerUrl: MQTT, tickMs: 50, telemetryMs: 10 });
 
 const headers = { origin: ORIGIN, "content-type": "application/json" };
-await fetch(`${BASE}/api/setup`, { method: "POST", headers, body: JSON.stringify({ name: "a", email: "a@t.test", password: PASSWORD }) });
-const signedIn = await fetch(`${BASE}/api/auth/sign-in/email`, { method: "POST", headers, body: JSON.stringify({ email: "a@t.test", password: PASSWORD }) });
-const cookie = signedIn.headers.getSetCookie().map((value) => value.split(";")[0]).join("; ");
+await fetch(`${BASE}/api/setup`, {
+  method: "POST",
+  headers,
+  body: JSON.stringify({ name: "a", email: "a@t.test", password: PASSWORD }),
+});
+const signedIn = await fetch(`${BASE}/api/auth/sign-in/email`, {
+  method: "POST",
+  headers,
+  body: JSON.stringify({ email: "a@t.test", password: PASSWORD }),
+});
+const cookie = signedIn.headers
+  .getSetCookie()
+  .map((value) => value.split(";")[0])
+  .join("; ");
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
-const connect = (): Client => io(BASE, { reconnection: false, forceNew: true, extraHeaders: { origin: ORIGIN, cookie } });
+const connect = (): Client =>
+  io(BASE, { reconnection: false, forceNew: true, extraHeaders: { origin: ORIGIN, cookie } });
 const connected = (client: Client) =>
   new Promise<void>((resolve, reject) => {
     client.once("connect", () => resolve());
@@ -145,19 +162,25 @@ for (let index = 0; index < rounds; index++) {
   objects[index] = now.objects;
   rss[index] = now.rss;
   if ((index + 1) % Math.max(1, Math.floor(rounds / 10)) === 0) {
-    console.log(`round ${index + 1}: heap ${now.heap.toFixed(1)}MB, objects ${now.objects}, rss ${now.rss.toFixed(0)}MB`);
+    console.log(
+      `round ${index + 1}: heap ${now.heap.toFixed(1)}MB, objects ${now.objects}, rss ${now.rss.toFixed(0)}MB`,
+    );
   }
 }
 
 const from = Math.floor(rounds * 0.6);
 const span = rounds - 1 - from;
 const perRound = (values: Float64Array) => (values[rounds - 1]! - values[from]!) / span;
-console.log(`\nafter warm-up, per round: heap ${perRound(heap).toFixed(4)}MB, objects ${perRound(objects).toFixed(1)}, rss ${perRound(rss).toFixed(3)}MB`);
+console.log(
+  `\nafter warm-up, per round: heap ${perRound(heap).toFixed(4)}MB, objects ${perRound(objects).toFixed(1)}, rss ${perRound(rss).toFixed(3)}MB`,
+);
 console.log(`messages queued while offline: ${simulator.queuedMessages()}`);
 
 const leak = Array.from({ length: 200_000 }, (_, index) => ({ index, text: `x${index}` }));
 const control = await sample();
-console.log(`control, 200k objects held on purpose: heap ${heap[rounds - 1]!.toFixed(1)}MB -> ${control.heap.toFixed(1)}MB (${leak.length})`);
+console.log(
+  `control, 200k objects held on purpose: heap ${heap[rounds - 1]!.toFixed(1)}MB -> ${control.heap.toFixed(1)}MB (${leak.length})`,
+);
 
 main.close();
 await simulator.stop();

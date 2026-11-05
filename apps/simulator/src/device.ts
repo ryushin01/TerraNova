@@ -1,9 +1,9 @@
 import {
-  MAX_PUMP_DURATION_SEC,
   type AckStatus,
   type Actuator,
   type Command,
   type CommandAck,
+  MAX_PUMP_DURATION_SEC,
   type Telemetry,
 } from "@terranova/shared";
 
@@ -117,13 +117,7 @@ export class ZoneDevice {
     return this.ack(commandId, "pump", "completed", nowMs, reason);
   }
 
-  private ack(
-    commandId: string,
-    actuator: Actuator,
-    status: AckStatus,
-    nowMs: number,
-    reason?: string,
-  ): CommandAck {
+  private ack(commandId: string, actuator: Actuator, status: AckStatus, nowMs: number, reason?: string): CommandAck {
     const ack: CommandAck = {
       commandId,
       zoneId: this.zoneId,

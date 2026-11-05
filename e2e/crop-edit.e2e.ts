@@ -1,4 +1,4 @@
-import { Farm, createAdmin, expect, signIn, test, useStack } from "./fixtures";
+import { createAdmin, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 
@@ -13,7 +13,9 @@ test.describe("editing sections", () => {
     return farm.page.locator(`[data-section-more-items="${crop}"]`);
   };
   const order = (farm: Farm) =>
-    farm.page.locator("[data-section]").evaluateAll((sections) => sections.map((s) => (s as HTMLElement).dataset.section));
+    farm.page
+      .locator("[data-section]")
+      .evaluateAll((sections) => sections.map((s) => (s as HTMLElement).dataset.section));
 
   test("renaming keeps the zones and alarm times, and icons follow the choice", async ({ page }) => {
     const farm = new Farm(page);

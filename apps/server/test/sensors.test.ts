@@ -66,7 +66,14 @@ test("readings past 30 days are removed", async () => {
 
 test("a failed write is logged and never reaches live updates", async () => {
   const logged = spyOn(console, "error").mockImplementation(() => {});
-  const broken = new SensorHistory({ insert: () => { throw new Error("disk full"); } } as never, MINUTE);
+  const broken = new SensorHistory(
+    {
+      insert: () => {
+        throw new Error("disk full");
+      },
+    } as never,
+    MINUTE,
+  );
   await broken.record(telemetry("zone-a", 20), NOW);
   expect(logged).toHaveBeenCalled();
   logged.mockRestore();

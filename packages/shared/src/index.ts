@@ -21,10 +21,8 @@ export const SOIL_SUFFICIENT_PCT = 70;
 export const topics = {
   telemetry: (zoneId: string) => `terranova/zones/${zoneId}/telemetry`,
   status: (zoneId: string) => `terranova/zones/${zoneId}/status`,
-  command: (zoneId: string, actuator: Actuator) =>
-    `terranova/zones/${zoneId}/actuators/${actuator}/command`,
-  ack: (zoneId: string, actuator: Actuator) =>
-    `terranova/zones/${zoneId}/actuators/${actuator}/ack`,
+  command: (zoneId: string, actuator: Actuator) => `terranova/zones/${zoneId}/actuators/${actuator}/command`,
+  ack: (zoneId: string, actuator: Actuator) => `terranova/zones/${zoneId}/actuators/${actuator}/ack`,
   allTelemetry: "terranova/zones/+/telemetry",
   allStatuses: "terranova/zones/+/status",
   allAcks: "terranova/zones/+/actuators/+/ack",
@@ -109,9 +107,7 @@ export function parseTelemetry(payload: string): Telemetry | null {
 
 export function parseZoneStatus(payload: string): ZoneStatus | null {
   const v = parseObject(payload);
-  return v && typeof v.zoneId === "string" && typeof v.online === "boolean"
-    ? (v as unknown as ZoneStatus)
-    : null;
+  return v && typeof v.zoneId === "string" && typeof v.online === "boolean" ? (v as unknown as ZoneStatus) : null;
 }
 
 export function parseAck(payload: string): CommandAck | null {
@@ -220,7 +216,9 @@ export function normalizeAutomation(value: unknown): AutomationRules | null {
 
   const ventBlank = ventOnAboveC === null && ventOffBelowC === null;
   const ventValid =
-    number(ventOnAboveC, -20, 60) && number(ventOffBelowC, -20, 60) && (ventOffBelowC as number) < (ventOnAboveC as number);
+    number(ventOnAboveC, -20, 60) &&
+    number(ventOffBelowC, -20, 60) &&
+    (ventOffBelowC as number) < (ventOnAboveC as number);
   const lightBlank = lightOnAt === null && lightOffAt === null;
   const lightValid = time(lightOnAt) && time(lightOffAt) && lightOnAt !== lightOffAt;
   // At or above the sufficient level, the alarm could never lead to watering.
@@ -298,7 +296,11 @@ export type RemoveCropResult =
   | { ok: true }
   | { ok: false; error: "not_found" | "not_empty" | "forbidden" | "internal" };
 
+/** Until when rules leave a device alone after a manual change, by "zone|actuator". */
+export type AutomationPauses = Record<string, string>;
+
 export interface FarmSnapshot {
+  automationPauses: AutomationPauses;
   crops: Crop[];
   /** The time zone alarm times are in. */
   timeZone: string;
@@ -387,6 +389,7 @@ export interface ServerToClientEvents {
   "zone:update": (zone: ZoneSnapshot) => void;
   "cycle:update": (cycle: WateringCycle) => void;
   "crops:update": (crops: Crop[]) => void;
+  "automation:pauses": (pauses: AutomationPauses) => void;
   "sections:update": (sections: Record<string, string>) => void;
 }
 

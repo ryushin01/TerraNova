@@ -48,7 +48,9 @@ export function parseSubscription(body: Record<string, unknown> | null): Subscri
     typeof keys?.auth === "string" &&
     keys.p256dh.length <= 256 &&
     keys.auth.length <= 256;
-  return valid ? { endpoint: body!.endpoint as string, keys: { p256dh: keys!.p256dh as string, auth: keys!.auth as string } } : null;
+  return valid
+    ? { endpoint: body!.endpoint as string, keys: { p256dh: keys!.p256dh as string, auth: keys!.auth as string } }
+    : null;
 }
 
 const MESSAGES = {

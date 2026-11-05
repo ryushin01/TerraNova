@@ -1,4 +1,4 @@
-import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { type ChildProcess, execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { networkInterfaces } from "node:os";
 import { dirname, join } from "node:path";
@@ -29,10 +29,23 @@ function loadCertificate(dir: string, address: string): { key: string; cert: str
     execFileSync(
       "openssl",
       [
-        "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:prime256v1", "-nodes",
-        "-keyout", keyPath, "-out", certPath, "-days", "365",
-        "-subj", "/CN=TerraNova",
-        "-addext", `subjectAltName=IP:${address},IP:127.0.0.1,DNS:localhost`,
+        "req",
+        "-x509",
+        "-newkey",
+        "ec",
+        "-pkeyopt",
+        "ec_paramgen_curve:prime256v1",
+        "-nodes",
+        "-keyout",
+        keyPath,
+        "-out",
+        certPath,
+        "-days",
+        "365",
+        "-subj",
+        "/CN=TerraNova",
+        "-addext",
+        `subjectAltName=IP:${address},IP:127.0.0.1,DNS:localhost`,
       ],
       { stdio: "ignore" },
     );

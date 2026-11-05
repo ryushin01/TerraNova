@@ -1,6 +1,6 @@
+import { request as httpsRequest } from "node:https";
 import { connect } from "node:net";
 import { networkInterfaces } from "node:os";
-import { request as httpsRequest } from "node:https";
 import { expect, test } from "@playwright/test";
 
 const address = Object.values(networkInterfaces())
@@ -107,7 +107,13 @@ test("the live connection also works when WebSockets are unavailable", async ({ 
 
 test("repeated wrong passwords are blocked, even with a forged address", async () => {
   const attempt = (forged?: string) =>
-    post(PUBLIC, "/api/auth/sign-in/email", { email: ADMIN.email, password: "wrong-password" }, PUBLIC, forged ? { "x-forwarded-for": forged } : {});
+    post(
+      PUBLIC,
+      "/api/auth/sign-in/email",
+      { email: ADMIN.email, password: "wrong-password" },
+      PUBLIC,
+      forged ? { "x-forwarded-for": forged } : {},
+    );
   const results: number[] = [];
   for (let index = 0; index < 8; index++) results.push(await attempt(`203.0.113.${index}`));
   // Successful sign-ins from earlier tests count too, so fewer than 5 of these may get through.

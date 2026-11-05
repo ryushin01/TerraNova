@@ -2,8 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { MAX_PUMP_DURATION_SEC, parseCommand } from "@terranova/shared";
 import { ZoneDevice } from "../src/device";
 
-const device = (pumpFailRate = 0) =>
-  new ZoneDevice({ zoneId: "zone-a", pumpFailRate, random: () => 0.5 });
+const device = (pumpFailRate = 0) => new ZoneDevice({ zoneId: "zone-a", pumpFailRate, random: () => 0.5 });
 
 describe("pump safety", () => {
   test("stops at the requested duration and reports completion", () => {
@@ -50,7 +49,10 @@ describe("pump safety", () => {
     const d = device();
     d.handleCommand("pump", { commandId: "c1", action: "on", durationSec: 10 }, 0);
     const acks = d.handleCommand("pump", { commandId: "c2", action: "off" }, 1_000);
-    expect(acks.map((a) => [a.commandId, a.status])).toEqual([["c1", "completed"], ["c2", "completed"]]);
+    expect(acks.map((a) => [a.commandId, a.status])).toEqual([
+      ["c1", "completed"],
+      ["c2", "completed"],
+    ]);
     expect(d.telemetry(1_000).actuators.pump).toBe(false);
   });
 
@@ -83,8 +85,11 @@ describe("parseCommand", () => {
     });
   });
 
-  test.each(["not json", "null", '{"action":"on"}', '{"commandId":"c","action":"open"}', '{"commandId":"c","action":"on","durationSec":-1}'])(
-    "rejects %s",
-    (payload) => expect(parseCommand(payload)).toBeNull(),
-  );
+  test.each([
+    "not json",
+    "null",
+    '{"action":"on"}',
+    '{"commandId":"c","action":"open"}',
+    '{"commandId":"c","action":"on","durationSec":-1}',
+  ])("rejects %s", (payload) => expect(parseCommand(payload)).toBeNull());
 });

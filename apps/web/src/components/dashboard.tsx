@@ -1,14 +1,14 @@
 "use client";
 
 import {
+  ActionBar,
   Alert,
   Badge,
-  ActionBar,
   Box,
   Button,
+  Card,
   Checkbox,
   CloseButton,
-  Card,
   DataList,
   Dialog,
   Flex,
@@ -26,25 +26,26 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
+  type AutomationPauses,
   BUILTIN_CROP_NAMES,
-  MANUAL_ACTUATORS,
-  SOIL_SUFFICIENT_PCT,
-  ZONE_IDS,
-  canControl,
   type ConfirmResult,
   type ControlResult,
   type Crop,
   type CropIconKey,
+  canControl,
+  MANUAL_ACTUATORS,
   type ManualActuator,
+  SOIL_SUFFICIENT_PCT,
   type WateringCycle,
   type WateringState,
+  ZONE_IDS,
   type ZoneSnapshot,
 } from "@terranova/shared";
 import { useFormatter, useTranslations } from "next-intl";
-import { useState, type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import { LuBell, LuPlus } from "react-icons/lu";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
-import { LuBell, LuPlus } from "react-icons/lu";
 import { AddCropDialog } from "./add-crop-dialog";
 import { AlarmTimesDialog } from "./alarm-times-dialog";
 import { AutomationDialog } from "./automation-dialog";
@@ -79,15 +80,33 @@ export function Dashboard() {
   const [selecting, setSelecting] = useState(false);
   const [addingCrop, setAddingCrop] = useState(false);
   const [editingTimes, setEditingTimes] = useState<{ id: string; name: string; times: string[] } | null>(null);
-  const { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, updateCrop, setAutomation, reorderCrops, setAlarmTimes, removeCrop, stopPump, setActuator } =
-    useFarm(
-      () => router.replace("/login"),
-      (cycle) => {
-        if (cycle.state === "completed" && cycle.reason === "duration_elapsed") {
-          toaster.create({ type: "success", title: t("wateringDone", { zone: zoneLetter(cycle.zoneId) }) });
-        }
-      },
-    );
+  const {
+    connection,
+    automationPauses,
+    crops,
+    timeZone,
+    sections,
+    zones,
+    cycles,
+    confirmAlarm,
+    startWatering,
+    moveZones,
+    addCrop,
+    updateCrop,
+    setAutomation,
+    reorderCrops,
+    setAlarmTimes,
+    removeCrop,
+    stopPump,
+    setActuator,
+  } = useFarm(
+    () => router.replace("/login"),
+    (cycle) => {
+      if (cycle.state === "completed" && cycle.reason === "duration_elapsed") {
+        toaster.create({ type: "success", title: t("wateringDone", { zone: zoneLetter(cycle.zoneId) }) });
+      }
+    },
+  );
   const [pending, setPending] = useState<Set<string>>(new Set());
 
   const connected = connection === "connected";
@@ -271,26 +290,27 @@ export function Dashboard() {
               )}
             </Alert.Root>
           )}
-          {(alarms.length === 1 || showAlarmList) && alarms.map((alarm) => (
-            <Alert.Root key={alarm.id} status="warning" alignItems="center" flexWrap="wrap" gap="3">
-              <Alert.Indicator />
-              <Alert.Title flex="1" minW="40">
-                {t("alarm", { zone: zoneLetter(alarm.zoneId) })}
-                {alarm.reminderCount > 0 && ` · ${t("reminded", { count: alarm.reminderCount })}`}
-              </Alert.Title>
-              {allowed && (
-                <Button
-                  size="lg"
-                  colorPalette="orange"
-                  disabled={!connected}
-                  loading={pending.has(alarm.id)}
-                  onClick={() => run(alarm.id, () => confirmAlarm(alarm.id))}
-                >
-                  {t("confirm")}
-                </Button>
-              )}
-            </Alert.Root>
-          ))}
+          {(alarms.length === 1 || showAlarmList) &&
+            alarms.map((alarm) => (
+              <Alert.Root key={alarm.id} status="warning" alignItems="center" flexWrap="wrap" gap="3">
+                <Alert.Indicator />
+                <Alert.Title flex="1" minW="40">
+                  {t("alarm", { zone: zoneLetter(alarm.zoneId) })}
+                  {alarm.reminderCount > 0 && ` · ${t("reminded", { count: alarm.reminderCount })}`}
+                </Alert.Title>
+                {allowed && (
+                  <Button
+                    size="lg"
+                    colorPalette="orange"
+                    disabled={!connected}
+                    loading={pending.has(alarm.id)}
+                    onClick={() => run(alarm.id, () => confirmAlarm(alarm.id))}
+                  >
+                    {t("confirm")}
+                  </Button>
+                )}
+              </Alert.Root>
+            ))}
           {pumping.map((zoneId) => (
             <Alert.Root key={zoneId} status="info" alignItems="center" flexWrap="wrap" gap="3">
               <Alert.Indicator />
@@ -320,21 +340,21 @@ export function Dashboard() {
             {t("selectionHint")}
           </Text>
           <HStack gap="2" ms="auto">
-          <Button
-            variant={selecting ? "solid" : "outline"}
-            data-select-mode
-            aria-pressed={selecting}
-            onClick={() => {
-              if (selecting) clear();
-              setSelecting(!selecting);
-            }}
-          >
-            {t(selecting ? "selectModeOff" : "selectModeOn")}
-          </Button>
-          <Button variant="outline" data-add-crop disabled={!connected} onClick={() => setAddingCrop(true)}>
-            <LuPlus aria-hidden />
-            {t("addCrop")}
-          </Button>
+            <Button
+              variant={selecting ? "solid" : "outline"}
+              data-select-mode
+              aria-pressed={selecting}
+              onClick={() => {
+                if (selecting) clear();
+                setSelecting(!selecting);
+              }}
+            >
+              {t(selecting ? "selectModeOff" : "selectModeOn")}
+            </Button>
+            <Button variant="outline" data-add-crop disabled={!connected} onClick={() => setAddingCrop(true)}>
+              <LuPlus aria-hidden />
+              {t("addCrop")}
+            </Button>
           </HStack>
         </Flex>
       )}
@@ -469,6 +489,8 @@ export function Dashboard() {
                       crop={crop}
                       selected={selected.has(zoneId)}
                       selecting={selecting}
+                      pauses={automationPauses}
+                      timeZone={timeZone}
                       onToggleSelect={() => toggle(zoneId)}
                       dragging={!!pointer && selected.has(zoneId)}
                       group={selected.has(zoneId) && selectedIds.length > 1 ? selectedIds : null}
@@ -484,9 +506,7 @@ export function Dashboard() {
                       onBulk={applyBulk}
                       onStop={() => run(`stop:${zoneId}`, () => stopPump(zoneId))}
                       onMove={(target) => run(`move:${zoneId}`, () => moveZones([zoneId], target))}
-                      onSwitch={(actuator, on) =>
-                        run(`${zoneId}:${actuator}`, () => setActuator(zoneId, actuator, on))
-                      }
+                      onSwitch={(actuator, on) => run(`${zoneId}:${actuator}`, () => setActuator(zoneId, actuator, on))}
                     />
                   </li>
                 ))}
@@ -649,6 +669,8 @@ interface ZoneCardProps {
   crop: Crop;
   selected: boolean;
   selecting: boolean;
+  pauses: AutomationPauses;
+  timeZone: string;
   onToggleSelect: () => void;
   dragging: boolean;
   /** All selected zones, when this card is part of a selection of two or more. */
@@ -673,6 +695,8 @@ function ZoneCard({
   crop,
   selected,
   selecting,
+  pauses,
+  timeZone,
   onToggleSelect,
   dragging,
   group,
@@ -703,9 +727,7 @@ function ZoneCard({
   const stateLabel = t(`state.${stateKey}`);
   const reasonKey = `reason.${cycle?.reason}`;
   const showReason =
-    !!cycle &&
-    ["failed", "timed_out", "skipped", "completed"].includes(cycle.state) &&
-    t.has(reasonKey as never);
+    !!cycle && ["failed", "timed_out", "skipped", "completed"].includes(cycle.state) && t.has(reasonKey as never);
 
   const value = (number: number | undefined, unit: string) =>
     number === undefined ? "–" : `${format.number(number, { maximumFractionDigits: 1 })}${unit}`;
@@ -713,8 +735,18 @@ function ZoneCard({
   const look = fieldLook({ state: cycle?.state, stopped, online, soil });
   const zoneName = zoneLetter(zoneId);
   const pumping =
-    !!telemetry?.actuators.pump || cycle?.state === "confirmed" || cycle?.state === "command_sent" || cycle?.state === "watering";
+    !!telemetry?.actuators.pump ||
+    cycle?.state === "confirmed" ||
+    cycle?.state === "command_sent" ||
+    cycle?.state === "watering";
   const soilSufficient = soil !== undefined && soil >= SOIL_SUFFICIENT_PCT;
+
+  /** Only worth mentioning where a rule would otherwise act on this device. */
+  const pausedUntil = (actuator: ManualActuator) => {
+    const hasRule = actuator === "vent" ? crop.automation.ventOnAboveC !== null : crop.automation.lightOnAt !== null;
+    const until = pauses[`${zoneId}|${actuator}`];
+    return hasRule && until && Date.parse(until) > Date.now() ? until : null;
+  };
 
   const handleMenu = (value: string) => {
     if (group) {
@@ -814,7 +846,12 @@ function ZoneCard({
             {allowed && (
               <Menu.Root lazyMount unmountOnExit onSelect={({ value }) => handleMenu(value)}>
                 <Menu.Trigger asChild>
-                  <IconButton variant="ghost" size="md" aria-label={t("menu.open", { zone: zoneName })} data-menu-button={zoneId}>
+                  <IconButton
+                    variant="ghost"
+                    size="md"
+                    aria-label={t("menu.open", { zone: zoneName })}
+                    data-menu-button={zoneId}
+                  >
                     ⋮
                   </IconButton>
                 </Menu.Trigger>
@@ -844,14 +881,7 @@ function ZoneCard({
           {showReason && <Text textStyle="xs">{t(reasonKey as never)}</Text>}
         </Stack>
 
-        <Progress.Root
-          value={soil ?? null}
-          min={0}
-          max={100}
-          size="sm"
-          colorPalette="teal"
-          opacity={online ? 1 : 0.5}
-        >
+        <Progress.Root value={soil ?? null} min={0} max={100} size="sm" colorPalette="teal" opacity={online ? 1 : 0.5}>
           <Flex justify="space-between" mb="1">
             <Progress.Label textStyle="sm" fontWeight="normal" color="fg.muted">
               {t("soil")}
@@ -872,24 +902,35 @@ function ZoneCard({
         </DataList.Root>
 
         <Stack gap="0">
-          {MANUAL_ACTUATORS.map((actuator) => (
-            <Switch.Root
-              key={actuator}
-              data-actuator={actuator}
-              size="md"
-              minH="11"
-              w="full"
-              justifyContent="space-between"
-              // Shows what the device reports, so the switch can't claim a change that didn't happen.
-              checked={!!telemetry?.actuators[actuator]}
-              disabled={!allowed || !online || pending.has(`${zoneId}:${actuator}`)}
-              onCheckedChange={(event) => onSwitch(actuator, event.checked)}
-            >
-              <Switch.HiddenInput />
-              <Switch.Label fontWeight="normal">{t(actuator)}</Switch.Label>
-              <Switch.Control />
-            </Switch.Root>
-          ))}
+          {MANUAL_ACTUATORS.map((actuator) => {
+            const until = pausedUntil(actuator);
+            return (
+              <Box key={actuator}>
+                <Switch.Root
+                  data-actuator={actuator}
+                  size="md"
+                  minH="11"
+                  w="full"
+                  justifyContent="space-between"
+                  // Shows what the device reports, so the switch can't claim a change that didn't happen.
+                  checked={!!telemetry?.actuators[actuator]}
+                  disabled={!allowed || !online || pending.has(`${zoneId}:${actuator}`)}
+                  onCheckedChange={(event) => onSwitch(actuator, event.checked)}
+                >
+                  <Switch.HiddenInput />
+                  <Switch.Label fontWeight="normal">{t(actuator)}</Switch.Label>
+                  <Switch.Control />
+                </Switch.Root>
+                {until && (
+                  <Text textStyle="xs" color="fg.muted" mb="1" data-automation-paused={actuator}>
+                    {t("automationPaused", {
+                      time: format.dateTime(new Date(until), { timeStyle: "short", timeZone: timeZone || undefined }),
+                    })}
+                  </Text>
+                )}
+              </Box>
+            );
+          })}
         </Stack>
 
         {showOffline && zone?.lastSeenAt && (

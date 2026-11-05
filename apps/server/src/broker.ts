@@ -1,6 +1,6 @@
 import { createServer } from "node:net";
-import { Aedes } from "aedes";
 import { DEFAULT_MQTT_PORT } from "@terranova/shared";
+import { Aedes } from "aedes";
 
 export interface BrokerOptions {
   port?: number;

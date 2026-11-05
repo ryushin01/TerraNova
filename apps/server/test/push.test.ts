@@ -3,7 +3,7 @@ import type { WateringCycle } from "@terranova/shared";
 import { createAuth } from "../src/auth";
 import { openDatabase } from "../src/db";
 import { pushSubscriptions } from "../src/db/schema";
-import { PushNotifier, isPushEndpoint, parseSubscription, type Subscription } from "../src/push";
+import { isPushEndpoint, PushNotifier, parseSubscription, type Subscription } from "../src/push";
 
 const FCM = "https://fcm.googleapis.com/fcm/send/abc";
 const KEYS = { p256dh: "p".repeat(20), auth: "a".repeat(10) };
@@ -51,15 +51,26 @@ describe("sending", () => {
 
   beforeEach(async () => {
     database = await openDatabase();
-    const auth = createAuth({ db: database.db, baseURL: "http://localhost:3000", secret: "s".repeat(40), trustedOrigins: [] });
-    const created = await auth.api.createUser({ body: { name: "A", email: "a@t.test", password: "correct-horse-1", role: "viewer" } });
+    const auth = createAuth({
+      db: database.db,
+      baseURL: "http://localhost:3000",
+      secret: "s".repeat(40),
+      trustedOrigins: [],
+    });
+    const created = await auth.api.createUser({
+      body: { name: "A", email: "a@t.test", password: "correct-horse-1", role: "viewer" },
+    });
     userId = created.user.id;
     sent = [];
     failWith = null;
-    notifier = new PushNotifier(database.db, { publicKey: "pub", privateKey: "priv", subject: "https://example.com" }, async (subscription, payload) => {
-      if (failWith) throw Object.assign(new Error("push failed"), { statusCode: failWith });
-      sent.push({ subscription, payload: JSON.parse(payload) });
-    });
+    notifier = new PushNotifier(
+      database.db,
+      { publicKey: "pub", privateKey: "priv", subject: "https://example.com" },
+      async (subscription, payload) => {
+        if (failWith) throw Object.assign(new Error("push failed"), { statusCode: failWith });
+        sent.push({ subscription, payload: JSON.parse(payload) });
+      },
+    );
     await notifier.subscribe(userId, { endpoint: FCM, keys: KEYS }, "ko");
   });
 
@@ -69,17 +80,30 @@ describe("sending", () => {
 
   test("an alarm and a time-out reach subscribers in their language", async () => {
     await notifier.notify(cycle("alarm_sent", "zone-c"));
-    expect(sent[0]?.payload).toEqual({ title: "물 줄 시간이에요", body: "C 구역을 확인해 주세요.", tag: "zone-C", url: "/ko" });
+    expect(sent[0]?.payload).toEqual({
+      title: "물 줄 시간이에요",
+      body: "C 구역을 확인해 주세요.",
+      tag: "zone-C",
+      url: "/ko",
+    });
 
     await notifier.subscribe(userId, { endpoint: FCM, keys: KEYS }, "en");
     await notifier.notify(cycle("timed_out", "zone-c"));
-    expect(sent[1]?.payload).toEqual({ title: "Alarm timed out", body: "Zone C was not watered.", tag: "zone-C", url: "/en" });
+    expect(sent[1]?.payload).toEqual({
+      title: "Alarm timed out",
+      body: "Zone C was not watered.",
+      tag: "zone-C",
+      url: "/en",
+    });
   });
 
-  test.each(["confirmed", "command_sent", "watering", "completed", "failed", "skipped"] as const)("%s sends nothing", async (state) => {
-    await notifier.notify(cycle(state));
-    expect(sent).toHaveLength(0);
-  });
+  test.each(["confirmed", "command_sent", "watering", "completed", "failed", "skipped"] as const)(
+    "%s sends nothing",
+    async (state) => {
+      await notifier.notify(cycle(state));
+      expect(sent).toHaveLength(0);
+    },
+  );
 
   test("a browser that subscribes again replaces its record", async () => {
     await notifier.subscribe(userId, { endpoint: FCM, keys: KEYS }, "ko");

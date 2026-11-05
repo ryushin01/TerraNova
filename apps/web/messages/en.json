@@ -126,7 +126,8 @@
     "selectModeOff": "Done selecting",
     "selectZone": "Select zone {zone}",
     "automation": "Automatic control",
-    "automationOn": "Automatic"
+    "automationOn": "Automatic",
+    "automationPaused": "Manual setting held until {time} (automatic control paused)"
   },
   "nav": {
     "users": "Users",

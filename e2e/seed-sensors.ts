@@ -1,6 +1,7 @@
 /** Fills a database with a day of plausible readings, so README charts show a real-looking shape. */
-import { sensorSamples } from "../apps/server/src/db/schema";
+
 import { openDatabase } from "../apps/server/src/db";
+import { sensorSamples } from "../apps/server/src/db/schema";
 
 const STEP_MS = 10 * 60_000;
 const SAMPLES = 144;

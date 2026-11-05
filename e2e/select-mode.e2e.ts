@@ -1,4 +1,4 @@
-import { Farm, createAdmin, expect, signIn, test, useStack } from "./fixtures";
+import { createAdmin, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 
@@ -36,7 +36,10 @@ test.describe("selecting without a mouse", () => {
       await expect(farm.card("zone-a")).toContainText("중지됨");
       await expect(farm.card("zone-b")).toContainText("중지됨");
 
-      const { inner, width } = await page.evaluate(() => ({ inner: innerWidth, width: document.documentElement.scrollWidth }));
+      const { inner, width } = await page.evaluate(() => ({
+        inner: innerWidth,
+        width: document.documentElement.scrollWidth,
+      }));
       expect(width).toBe(inner);
 
       await page.locator("[data-select-mode]").tap();
@@ -44,7 +47,10 @@ test.describe("selecting without a mouse", () => {
       await expect(page.locator("[data-selection-count]")).toHaveCount(0);
     });
 
-    test("dragging a finger across fields never selects them, and scrolling isn't blocked", async ({ page, context }) => {
+    test("dragging a finger across fields never selects them, and scrolling isn't blocked", async ({
+      page,
+      context,
+    }) => {
       const farm = new Farm(page);
       await farm.open();
       await page.evaluate(() => {
@@ -57,7 +63,10 @@ test.describe("selecting without a mouse", () => {
       const cdp = await context.newCDPSession(page);
       await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point(card.y + 300)] });
       for (let step = 1; step <= 6; step++) {
-        await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [point(card.y + 300 - step * 40)] });
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [point(card.y + 300 - step * 40)],
+        });
       }
       await expect(page.locator("[data-marquee]")).toHaveCount(0);
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
@@ -108,7 +117,12 @@ test.describe("selecting without a mouse", () => {
   test("a viewer has no selection mode", async ({ browser, context }) => {
     await signIn(context);
     const { createUser } = await import("./fixtures");
-    await createUser(context, { name: "이조회", email: "viewer@terranova.test", password: "correct-horse-2", role: "viewer" });
+    await createUser(context, {
+      name: "이조회",
+      email: "viewer@terranova.test",
+      password: "correct-horse-2",
+      role: "viewer",
+    });
     const viewer = await browser.newContext({ baseURL: "http://localhost:3000" });
     await signIn(viewer, "viewer@terranova.test", "correct-horse-2");
     const page = await viewer.newPage();

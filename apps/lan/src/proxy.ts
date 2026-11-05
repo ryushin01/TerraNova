@@ -1,6 +1,6 @@
-import { connect } from "node:net";
-import { createServer, request, type IncomingHttpHeaders, type IncomingMessage } from "node:http";
+import { createServer, type IncomingHttpHeaders, type IncomingMessage, request } from "node:http";
 import { createServer as createHttpsServer } from "node:https";
+import { connect } from "node:net";
 
 export interface ProxyOptions {
   port: number;

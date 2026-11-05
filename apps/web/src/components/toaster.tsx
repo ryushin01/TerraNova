@@ -1,6 +1,6 @@
 "use client";
 
-import { Toaster as ChakraToaster, Portal, Stack, Toast, createToaster } from "@chakra-ui/react";
+import { Toaster as ChakraToaster, createToaster, Portal, Stack, Toast } from "@chakra-ui/react";
 
 // At the bottom and stacked, so messages never cover the alarm and stop buttons pinned to the top.
 export const toaster = createToaster({ placement: "bottom-end", max: 3, overlap: true });

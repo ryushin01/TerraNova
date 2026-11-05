@@ -1,5 +1,5 @@
 import { beforeEach, expect, test } from "bun:test";
-import { parseCommand, topics, type CommandAck, type Telemetry } from "@terranova/shared";
+import { type CommandAck, parseCommand, type Telemetry, topics } from "@terranova/shared";
 import { DeviceControls } from "../src/controls";
 import { ZoneRegistry } from "../src/zones";
 

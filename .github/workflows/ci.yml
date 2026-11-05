@@ -1,4 +1,4 @@
-# 타입 검사, 단위 테스트, 빌드, 브라우저 테스트를 푸시와 PR마다 실행한다.
+# 린트, 타입 검사, 단위 테스트, 빌드, 브라우저 테스트를 푸시와 PR마다 실행한다.
 name: CI
 
 on:
@@ -30,6 +30,7 @@ jobs:
       # 운영 의존성의 높음 이상 취약점만 막는다.
       - run: bun audit --prod --audit-level=high
 
+      - run: bun run lint
       - run: bun run typecheck
       - run: bun test
       - run: bun run build

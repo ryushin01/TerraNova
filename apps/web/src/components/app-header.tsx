@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Flex, Heading, HStack, Link as ChakraLink, Menu, Portal } from "@chakra-ui/react";
+import { Button, Link as ChakraLink, Flex, Heading, HStack, Menu, Portal } from "@chakra-ui/react";
 import { canControl } from "@terranova/shared";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
@@ -30,7 +30,11 @@ export function AppHeader({ title }: { title: string }) {
     }
     const outcome = await push.enable();
     if (outcome === "ok") toaster.create({ type: "success", title: t("notificationsEnabled") });
-    else toaster.create({ type: "error", title: t(outcome === "denied" ? "notificationsDenied" : "notificationsUnavailable") });
+    else
+      toaster.create({
+        type: "error",
+        title: t(outcome === "denied" ? "notificationsDenied" : "notificationsUnavailable"),
+      });
   };
 
   const signOut = async () => {

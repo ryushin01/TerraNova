@@ -1,4 +1,4 @@
-import { Farm, createAdmin, createUser, expect, signIn, test, useStack } from "./fixtures";
+import { createAdmin, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 test.describe.configure({ mode: "serial" });
 
@@ -92,7 +92,12 @@ test.describe("control history", () => {
   });
 
   test("viewers and signed-out visitors can't read the history", async ({ browser, context, page }) => {
-    await createUser(context, { name: "이조회", email: "viewer@terranova.test", password: "correct-horse-2", role: "viewer" });
+    await createUser(context, {
+      name: "이조회",
+      email: "viewer@terranova.test",
+      password: "correct-horse-2",
+      role: "viewer",
+    });
     const viewerContext = await browser.newContext({ baseURL: "http://localhost:3000" });
     await signIn(viewerContext, "viewer@terranova.test", "correct-horse-2");
     const viewerPage = await viewerContext.newPage();
@@ -107,7 +112,11 @@ test.describe("control history", () => {
     expect((await viewerContext.request.get("/api/history")).status()).toBe(403);
     await viewerContext.close();
 
-    expect((await browser.newContext({ baseURL: "http://localhost:3000" }).then((c) => c.request.get("/api/history"))).status()).toBe(401);
+    expect(
+      (
+        await browser.newContext({ baseURL: "http://localhost:3000" }).then((c) => c.request.get("/api/history"))
+      ).status(),
+    ).toBe(401);
 
     await page.goto("/ko/history");
     await expect(page.locator("[data-history-row]").first()).toBeVisible();
@@ -119,7 +128,10 @@ test.describe("control history", () => {
     test("fits the screen", async ({ page }) => {
       await page.goto("/ko/history");
       await expect(page.locator("[data-history-row]").first()).toBeVisible();
-      const { inner, width } = await page.evaluate(() => ({ inner: innerWidth, width: document.documentElement.scrollWidth }));
+      const { inner, width } = await page.evaluate(() => ({
+        inner: innerWidth,
+        width: document.documentElement.scrollWidth,
+      }));
       expect(width).toBe(inner);
     });
   });

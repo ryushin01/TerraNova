@@ -1,26 +1,27 @@
 import {
+  type Crop,
+  type CropIconKey,
   DEFAULT_ZONE_CROPS,
-  ZONE_IDS,
-  NO_AUTOMATION,
   isCropIconKey,
+  NO_AUTOMATION,
   normalizeAlarmTimes,
   normalizeAutomation,
   suggestCropIcon,
-  type Crop,
-  type CropIconKey,
+  ZONE_IDS,
 } from "@terranova/shared";
 import { asc, eq, max } from "drizzle-orm";
-import type { Database } from "./db";
 import type { ZoneRules } from "./automation";
-import type { ZoneSchedule } from "./watering";
+import type { Database } from "./db";
 import { crops, zoneSections } from "./db/schema";
+import type { ZoneSchedule } from "./watering";
 
 const MAX_CROP_NAME_LENGTH = 30;
 const UNIQUE_VIOLATION = "23505";
 
 function isUniqueViolation(error: unknown): boolean {
-  for (let current: any = error; current; current = current.cause) {
+  for (let current = error as { code?: string; cause?: unknown } | undefined; current; ) {
     if (current.code === UNIQUE_VIOLATION) return true;
+    current = current.cause as typeof current;
   }
   return false;
 }
@@ -139,7 +140,11 @@ export class ZoneSections {
   async setAutomation(cropId: string, rules: unknown): Promise<boolean> {
     const automation = normalizeAutomation(rules);
     if (!automation) return false;
-    const updated = await this.db.update(crops).set({ automation }).where(eq(crops.id, cropId)).returning({ id: crops.id });
+    const updated = await this.db
+      .update(crops)
+      .set({ automation })
+      .where(eq(crops.id, cropId))
+      .returning({ id: crops.id });
     return updated.length > 0;
   }
 

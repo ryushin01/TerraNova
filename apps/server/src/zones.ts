@@ -1,4 +1,4 @@
-import { ZONE_IDS, type Telemetry, type ZoneSnapshot } from "@terranova/shared";
+import { type Telemetry, ZONE_IDS, type ZoneSnapshot } from "@terranova/shared";
 
 interface LiveZone {
   statusOnline: boolean;
@@ -37,9 +37,7 @@ export class ZoneRegistry {
 
   isOnline(zoneId: string, nowMs: number): boolean {
     const zone = this.zones.get(zoneId);
-    return (
-      !!zone && zone.statusOnline && zone.lastSeenMs !== null && nowMs - zone.lastSeenMs <= this.staleAfterMs
-    );
+    return !!zone && zone.statusOnline && zone.lastSeenMs !== null && nowMs - zone.lastSeenMs <= this.staleAfterMs;
   }
 
   soilMoisture(zoneId: string): number | null {

@@ -2,7 +2,7 @@
 
 import { Alert, Button, Card, Container, Field, Input, Stack, Text } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 
@@ -64,24 +64,24 @@ export function LoginForm() {
     <AuthCard title={t("loginTitle")}>
       <form method="post" onSubmit={submit}>
         <Stack gap="4">
-        {error && (
-          <Alert.Root status="error">
-            <Alert.Indicator />
-            <Alert.Title>{error}</Alert.Title>
-          </Alert.Root>
-        )}
-        <Field.Root required>
-          <Field.Label>{t("email")}</Field.Label>
-          <Input name="email" type="email" autoComplete="email" size="lg" />
-        </Field.Root>
-        <Field.Root required>
-          <Field.Label>{t("password")}</Field.Label>
-          <Input name="password" type="password" autoComplete="current-password" size="lg" />
-        </Field.Root>
-        <Button type="submit" size="lg" loading={loading} disabled={!interactive}>
-          {t("login")}
-        </Button>
-      </Stack>
+          {error && (
+            <Alert.Root status="error">
+              <Alert.Indicator />
+              <Alert.Title>{error}</Alert.Title>
+            </Alert.Root>
+          )}
+          <Field.Root required>
+            <Field.Label>{t("email")}</Field.Label>
+            <Input name="email" type="email" autoComplete="email" size="lg" />
+          </Field.Root>
+          <Field.Root required>
+            <Field.Label>{t("password")}</Field.Label>
+            <Input name="password" type="password" autoComplete="current-password" size="lg" />
+          </Field.Root>
+          <Button type="submit" size="lg" loading={loading} disabled={!interactive}>
+            {t("login")}
+          </Button>
+        </Stack>
       </form>
     </AuthCard>
   );
@@ -123,31 +123,31 @@ export function SetupForm() {
     <AuthCard title={t("setupTitle")} description={t("setupDescription")}>
       <form method="post" onSubmit={submit}>
         <Stack gap="4">
-        {error && (
-          <Alert.Root status="error">
-            <Alert.Indicator />
-            <Alert.Title>{error}</Alert.Title>
-          </Alert.Root>
-        )}
-        <Field.Root required>
-          <Field.Label>{t("name")}</Field.Label>
-          <Input name="name" autoComplete="name" size="lg" />
-        </Field.Root>
-        <Field.Root required>
-          <Field.Label>{t("email")}</Field.Label>
-          <Input name="email" type="email" autoComplete="email" size="lg" />
-        </Field.Root>
-        <Field.Root required>
-          <Field.Label>{t("password")}</Field.Label>
-          <Input name="password" type="password" autoComplete="new-password" minLength={8} size="lg" />
-          <Field.HelperText>
-            <Text as="span">{t("passwordHelp")}</Text>
-          </Field.HelperText>
-        </Field.Root>
-        <Button type="submit" size="lg" loading={loading} disabled={!interactive}>
-          {t("createAdmin")}
-        </Button>
-      </Stack>
+          {error && (
+            <Alert.Root status="error">
+              <Alert.Indicator />
+              <Alert.Title>{error}</Alert.Title>
+            </Alert.Root>
+          )}
+          <Field.Root required>
+            <Field.Label>{t("name")}</Field.Label>
+            <Input name="name" autoComplete="name" size="lg" />
+          </Field.Root>
+          <Field.Root required>
+            <Field.Label>{t("email")}</Field.Label>
+            <Input name="email" type="email" autoComplete="email" size="lg" />
+          </Field.Root>
+          <Field.Root required>
+            <Field.Label>{t("password")}</Field.Label>
+            <Input name="password" type="password" autoComplete="new-password" minLength={8} size="lg" />
+            <Field.HelperText>
+              <Text as="span">{t("passwordHelp")}</Text>
+            </Field.HelperText>
+          </Field.Root>
+          <Button type="submit" size="lg" loading={loading} disabled={!interactive}>
+            {t("createAdmin")}
+          </Button>
+        </Stack>
       </form>
     </AuthCard>
   );

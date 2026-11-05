@@ -1,8 +1,13 @@
 import type { Page } from "@playwright/test";
-import { Farm, createAdmin, expect, signIn, test, useStack } from "./fixtures";
+import { createAdmin, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 const selected = (page: Page) =>
-  page.locator("[data-selected]").evaluateAll((cards) => cards.map((card) => (card as HTMLElement).dataset.zone).sort().join());
+  page.locator("[data-selected]").evaluateAll((cards) =>
+    cards
+      .map((card) => (card as HTMLElement).dataset.zone)
+      .sort()
+      .join(),
+  );
 
 const box = async (farm: Farm, zone: string) => (await farm.card(zone).boundingBox())!;
 
@@ -127,7 +132,10 @@ test.describe("drag selection", () => {
     await expect(farm.switchInput("zone-b", "light")).toBeChecked();
 
     await page.locator("[data-selection-move]").click();
-    await page.locator("[data-selection-move-items]").getByRole("menuitem", { name: /도라지/ }).click();
+    await page
+      .locator("[data-selection-move-items]")
+      .getByRole("menuitem", { name: /도라지/ })
+      .click();
     await expect(farm.section("bellflower").locator('[data-zone="zone-a"], [data-zone="zone-b"]')).toHaveCount(2);
   });
 });

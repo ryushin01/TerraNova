@@ -49,7 +49,9 @@ test("live data goes to the backend and everything else to the web server", asyn
 });
 
 test("a client cannot claim a different address", async () => {
-  const response = await fetch(`${BASE}/ko`, { headers: { "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "http" } });
+  const response = await fetch(`${BASE}/ko`, {
+    headers: { "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "http" },
+  });
   const seen = (await response.json()) as { forwardedFor: string; proto: string };
   expect(seen.forwardedFor).not.toContain("203.0.113.9");
   expect(seen.proto).toBe("https");

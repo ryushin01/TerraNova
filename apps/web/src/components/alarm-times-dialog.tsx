@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, Dialog, Field, HStack, Input, Portal, Stack, Tag, Text, Wrap } from "@chakra-ui/react";
-import { MAX_ALARM_TIMES, normalizeAlarmTimes, type ControlResult } from "@terranova/shared";
+import { type ControlResult, MAX_ALARM_TIMES, normalizeAlarmTimes } from "@terranova/shared";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 

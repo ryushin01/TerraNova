@@ -19,7 +19,7 @@ import {
 } from "@chakra-ui/react";
 import { ROLE_NAMES, type RoleName } from "@terranova/shared";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { toaster } from "./toaster";
 
@@ -119,9 +119,7 @@ export function UsersAdmin() {
 
   const changeRole = async (user: UserRow, role: RoleName) => {
     const result = await authClient.admin.setRole({ userId: user.id, role });
-    toaster.create(
-      result.error ? { type: "error", title: t("failed") } : { type: "success", title: t("updated") },
-    );
+    toaster.create(result.error ? { type: "error", title: t("failed") } : { type: "success", title: t("updated") });
     await load();
   };
 
@@ -145,9 +143,7 @@ export function UsersAdmin() {
   const remove = async () => {
     if (!removing) return;
     const result = await authClient.admin.removeUser({ userId: removing.id });
-    toaster.create(
-      result.error ? { type: "error", title: t("failed") } : { type: "success", title: t("removed") },
-    );
+    toaster.create(result.error ? { type: "error", title: t("failed") } : { type: "success", title: t("removed") });
     setRemoving(null);
     await load();
   };
@@ -161,30 +157,30 @@ export function UsersAdmin() {
         </Card.Header>
         <Card.Body>
           <form onSubmit={create}>
-          <Stack gap="4">
-            <SimpleGrid columns={{ base: 1, md: 2 }} gap="4">
-              <Field.Root required>
-                <Field.Label>{tAuth("name")}</Field.Label>
-                <Input name="name" autoComplete="off" />
-              </Field.Root>
-              <Field.Root required>
-                <Field.Label>{tAuth("email")}</Field.Label>
-                <Input name="email" type="email" autoComplete="off" />
-              </Field.Root>
-              <Field.Root required>
-                <Field.Label>{tAuth("password")}</Field.Label>
-                <Input name="password" type="password" autoComplete="new-password" minLength={8} />
-                <Field.HelperText>{tAuth("passwordHelp")}</Field.HelperText>
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>{t("role")}</Field.Label>
-                <RoleSelect name="role" />
-              </Field.Root>
-            </SimpleGrid>
-            <Button type="submit" alignSelf="flex-start" size="lg" loading={saving}>
-              {t("create")}
-            </Button>
-          </Stack>
+            <Stack gap="4">
+              <SimpleGrid columns={{ base: 1, md: 2 }} gap="4">
+                <Field.Root required>
+                  <Field.Label>{tAuth("name")}</Field.Label>
+                  <Input name="name" autoComplete="off" />
+                </Field.Root>
+                <Field.Root required>
+                  <Field.Label>{tAuth("email")}</Field.Label>
+                  <Input name="email" type="email" autoComplete="off" />
+                </Field.Root>
+                <Field.Root required>
+                  <Field.Label>{tAuth("password")}</Field.Label>
+                  <Input name="password" type="password" autoComplete="new-password" minLength={8} />
+                  <Field.HelperText>{tAuth("passwordHelp")}</Field.HelperText>
+                </Field.Root>
+                <Field.Root>
+                  <Field.Label>{t("role")}</Field.Label>
+                  <RoleSelect name="role" />
+                </Field.Root>
+              </SimpleGrid>
+              <Button type="submit" alignSelf="flex-start" size="lg" loading={saving}>
+                {t("create")}
+              </Button>
+            </Stack>
           </form>
         </Card.Body>
       </Card.Root>

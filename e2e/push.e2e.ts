@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { Farm, createAdmin, expect, signIn, test, useStack } from "./fixtures";
+import { createAdmin, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 /**
  * Real service worker and real notifications, with one substitution: the browser's subscription.
@@ -14,13 +14,12 @@ const fakeSubscription = () => {
       return true;
     },
   };
-  PushManager.prototype.subscribe = async function () {
+  PushManager.prototype.subscribe = async () => {
     localStorage.setItem("e2e-subscribed", "1");
     return subscription as never;
   };
-  PushManager.prototype.getSubscription = async function () {
-    return (localStorage.getItem("e2e-subscribed") ? subscription : null) as never;
-  };
+  PushManager.prototype.getSubscription = async () =>
+    (localStorage.getItem("e2e-subscribed") ? subscription : null) as never;
 };
 
 const menuItem = async (farm: Farm, name: string) => (await farm.openAccountMenu()).getByRole("menuitem", { name });

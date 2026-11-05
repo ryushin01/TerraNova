@@ -13,7 +13,7 @@ import {
   Table,
   Text,
 } from "@chakra-ui/react";
-import { SENSOR_RANGES, ZONE_IDS, type SensorRange, type SensorSeries } from "@terranova/shared";
+import { SENSOR_RANGES, type SensorRange, type SensorSeries, ZONE_IDS } from "@terranova/shared";
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -58,7 +58,15 @@ function toRows({ points, fromMs, toMs, bucketMs }: SensorSeries): Row[] {
   return rows;
 }
 
-function SensorChart({ measure, rows, series }: { measure: (typeof MEASURES)[number]; rows: Row[]; series: SensorSeries }) {
+function SensorChart({
+  measure,
+  rows,
+  series,
+}: {
+  measure: (typeof MEASURES)[number];
+  rows: Row[];
+  series: SensorSeries;
+}) {
   const t = useTranslations("sensors");
   const format = useFormatter();
   const { key, unit, domain } = measure;
@@ -66,9 +74,13 @@ function SensorChart({ measure, rows, series }: { measure: (typeof MEASURES)[num
   const showDate = series.toMs - series.fromMs > DAY_MS;
 
   const number = (value: number) => format.number(value, { maximumFractionDigits: 1 });
-  const fullTime = (time: number) => format.dateTime(new Date(time), { dateStyle: "short", timeStyle: "short", timeZone });
+  const fullTime = (time: number) =>
+    format.dateTime(new Date(time), { dateStyle: "short", timeStyle: "short", timeZone });
   const shortTime = (time: number) =>
-    format.dateTime(new Date(time), showDate ? { month: "numeric", day: "numeric", timeZone } : { timeStyle: "short", timeZone });
+    format.dateTime(
+      new Date(time),
+      showDate ? { month: "numeric", day: "numeric", timeZone } : { timeStyle: "short", timeZone },
+    );
 
   const present = rows.filter((row) => row[key] !== null);
   const latest = present.at(-1)?.[key] ?? null;
@@ -120,11 +132,23 @@ function SensorChart({ measure, rows, series }: { measure: (typeof MEASURES)[num
                   const row = payload?.[0]?.payload as Row | undefined;
                   if (!active || !row || row[key] === null) return null;
                   return (
-                    <Box data-sensor-tooltip bg="bg.panel" borderWidth="1px" borderRadius="md" boxShadow="sm" px="3" py="2" textStyle="sm">
+                    <Box
+                      data-sensor-tooltip
+                      bg="bg.panel"
+                      borderWidth="1px"
+                      borderRadius="md"
+                      boxShadow="sm"
+                      px="3"
+                      py="2"
+                      textStyle="sm"
+                    >
                       <Text color="fg.muted" textStyle="xs">
                         {fullTime(row.time)}
                       </Text>
-                      <Text fontWeight="medium" fontVariantNumeric="tabular-nums">{`${number(row[key] as number)}${unit}`}</Text>
+                      <Text
+                        fontWeight="medium"
+                        fontVariantNumeric="tabular-nums"
+                      >{`${number(row[key] as number)}${unit}`}</Text>
                     </Box>
                   );
                 }}
@@ -227,7 +251,12 @@ export function SensorCharts() {
           {MEASURES.map((measure) => (
             <SensorChart key={measure.key} measure={measure} rows={rows} series={series} />
           ))}
-          <Button variant="outline" alignSelf="flex-start" data-sensor-table-toggle onClick={() => setShowTable((shown) => !shown)}>
+          <Button
+            variant="outline"
+            alignSelf="flex-start"
+            data-sensor-table-toggle
+            onClick={() => setShowTable((shown) => !shown)}
+          >
             {t(showTable ? "hideTable" : "showTable")}
           </Button>
           {showTable && (
@@ -245,7 +274,11 @@ export function SensorCharts() {
                   {recorded.map((row) => (
                     <Table.Row key={row.time} data-sensor-row>
                       <Table.Cell whiteSpace="nowrap">
-                        {format.dateTime(new Date(row.time), { dateStyle: "short", timeStyle: "short", timeZone: series.timeZone })}
+                        {format.dateTime(new Date(row.time), {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                          timeZone: series.timeZone,
+                        })}
                       </Table.Cell>
                       <Table.Cell textAlign="end">{number(row.temperatureC)}</Table.Cell>
                       <Table.Cell textAlign="end">{number(row.humidityPct)}</Table.Cell>

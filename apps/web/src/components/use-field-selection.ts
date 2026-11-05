@@ -99,9 +99,8 @@ export function useFieldSelection(enabled: boolean, onDrop: (zoneIds: string[], 
 
     const updateDrag = (g: Gesture) => {
       setPointer({ x: g.clientX, y: g.clientY });
-      const section = document
-        .elementFromPoint(g.clientX, g.clientY)
-        ?.closest<HTMLElement>("[data-section]")?.dataset.section;
+      const section = document.elementFromPoint(g.clientX, g.clientY)?.closest<HTMLElement>("[data-section]")
+        ?.dataset.section;
       target = section ?? null;
       setDropTarget(target);
     };

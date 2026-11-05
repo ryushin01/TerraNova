@@ -1,5 +1,5 @@
 import type { CDPSession, Page } from "@playwright/test";
-import { Farm, createAdmin, expect, signIn, test, useStack } from "../fixtures";
+import { createAdmin, expect, Farm, signIn, test, useStack } from "../fixtures";
 
 const ROUNDS = Number(process.env.MEMORY_ROUNDS ?? 20);
 
@@ -17,7 +17,12 @@ async function measure(page: Page, cdp: CDPSession) {
       }
     }, 0),
   );
-  return { heapMB: value("JSHeapUsedSize") / 1048576, nodes: value("Nodes"), listeners: value("JSEventListeners"), cssRules };
+  return {
+    heapMB: value("JSHeapUsedSize") / 1048576,
+    nodes: value("Nodes"),
+    listeners: value("JSEventListeners"),
+    cssRules,
+  };
 }
 
 test.describe("browser memory", () => {
@@ -70,7 +75,10 @@ test.describe("browser memory", () => {
       await page.locator('[name="crop-name"]').waitFor({ state: "detached" });
 
       // Leave the dashboard and return, unmounting everything including the live connection.
-      for (const [item, url] of [["사용자 관리", /\/ko\/users$/], ["구역 현황", /\/ko$/]] as const) {
+      for (const [item, url] of [
+        ["사용자 관리", /\/ko\/users$/],
+        ["구역 현황", /\/ko$/],
+      ] as const) {
         const menu = await farm.openAccountMenu();
         await menu.getByRole("menuitem", { name: item }).click();
         await expect(page).toHaveURL(url);

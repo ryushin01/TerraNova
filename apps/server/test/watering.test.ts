@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { canTransition, parseCommand, topics, type WateringCycle } from "@terranova/shared";
 import { openDatabase } from "../src/db";
-import { WateringService, dueSlots, localMinutes, type WateringConfig } from "../src/watering";
+import { dueSlots, localMinutes, type WateringConfig, WateringService } from "../src/watering";
 import { ZoneRegistry } from "../src/zones";
 
 const MINUTE = 60_000;
@@ -205,8 +205,14 @@ describe("watering started by a person", () => {
   test("keeps the wet-soil and offline protections", async () => {
     const s = service();
     reportZone("zone-a", 80);
-    expect(await s.startWatering("zone-a")).toMatchObject({ ok: true, cycle: { state: "skipped", reason: "soil_sufficient" } });
-    expect(await s.startWatering("zone-b")).toMatchObject({ ok: true, cycle: { state: "failed", reason: "zone_offline" } });
+    expect(await s.startWatering("zone-a")).toMatchObject({
+      ok: true,
+      cycle: { state: "skipped", reason: "soil_sufficient" },
+    });
+    expect(await s.startWatering("zone-b")).toMatchObject({
+      ok: true,
+      cycle: { state: "failed", reason: "zone_offline" },
+    });
     expect(published).toHaveLength(0);
   });
 
@@ -246,7 +252,10 @@ describe("device reports decide the outcome", () => {
     expect((await lastState(s))?.state).toBe("completed");
   });
 
-  test.each([["failed", "pump_fault"], ["rejected", "already_running"]] as const)("%s ack fails the cycle", async (status, reason) => {
+  test.each([
+    ["failed", "pump_fault"],
+    ["rejected", "already_running"],
+  ] as const)("%s ack fails the cycle", async (status, reason) => {
     const s = service();
     const { commandId } = await confirmedCycle(s);
     await s.handleAck(ack(commandId, status, reason));
@@ -333,7 +342,10 @@ describe("schedule", () => {
     await service(options).tick();
     await service(options).tick();
     const cycles = await service(options).latestCycles();
-    expect(cycles.map((c) => [c.zoneId, c.state])).toEqual([["zone-a", "alarm_sent"], ["zone-b", "alarm_sent"]]);
+    expect(cycles.map((c) => [c.zoneId, c.state])).toEqual([
+      ["zone-a", "alarm_sent"],
+      ["zone-b", "alarm_sent"],
+    ]);
     expect(events).toHaveLength(2);
   });
 

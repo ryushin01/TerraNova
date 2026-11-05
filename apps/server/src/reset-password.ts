@@ -56,12 +56,11 @@ let exitCode = 0;
 if (!email) {
   const admins = await database.db.select({ email: user.email }).from(user).where(eq(user.role, "admin"));
   console.log("Usage: bun run admin:reset-password <email>\n");
-  console.log(admins.length > 0 ? `Admin accounts:\n${admins.map((a) => `  ${a.email}`).join("\n")}` : "No admin accounts yet.");
+  console.log(
+    admins.length > 0 ? `Admin accounts:\n${admins.map((a) => `  ${a.email}`).join("\n")}` : "No admin accounts yet.",
+  );
 } else {
-  const [account] = await database.db
-    .select({ id: user.id, name: user.name })
-    .from(user)
-    .where(eq(user.email, email));
+  const [account] = await database.db.select({ id: user.id, name: user.name }).from(user).where(eq(user.email, email));
   if (!account) {
     console.error(`No account with the email ${email}.`);
     exitCode = 1;

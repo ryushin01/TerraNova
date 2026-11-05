@@ -2,7 +2,7 @@
 
 import { Button, Dialog, Field, Input, Portal, Stack } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
-import { useState, type FormEvent } from "react";
+import { type FormEvent, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { toaster } from "./toaster";
 

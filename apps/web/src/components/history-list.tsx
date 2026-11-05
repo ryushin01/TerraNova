@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert, Badge, Button, Flex, NativeSelect, Spinner, Stack, Table, Text } from "@chakra-ui/react";
-import { BUILTIN_CROP_NAMES, HISTORY_ACTIONS, ZONE_IDS, type HistoryEntry, type HistoryPage } from "@terranova/shared";
+import { BUILTIN_CROP_NAMES, HISTORY_ACTIONS, type HistoryEntry, type HistoryPage, ZONE_IDS } from "@terranova/shared";
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
@@ -136,7 +136,10 @@ export function HistoryList() {
       case "crop_remove":
         return t(`actions.${kind}`, { name: cropName(detail.crop) });
       case "crop_edit":
-        return t("actions.crop_edit", { previous: detail.previousName ?? cropName(detail.crop), name: cropName(detail.crop) });
+        return t("actions.crop_edit", {
+          previous: detail.previousName ?? cropName(detail.crop),
+          name: cropName(detail.crop),
+        });
       case "password_reset":
         return t("actions.password_reset", { name: detail.target ?? "–" });
       case "automation_change":
@@ -217,11 +220,11 @@ export function HistoryList() {
                       {format.dateTime(new Date(entry.at), { dateStyle: "short", timeStyle: "medium", timeZone })}
                     </Table.Cell>
                     <Table.Cell whiteSpace="nowrap">
-                      {t.has(`actors.${entry.actorRole}` as never) ? t(`actors.${entry.actorRole}` as never) : entry.actorName}
+                      {t.has(`actors.${entry.actorRole}` as never)
+                        ? t(`actors.${entry.actorRole}` as never)
+                        : entry.actorName}
                     </Table.Cell>
-                    <Table.Cell whiteSpace="nowrap">
-                      {entry.zoneId ? zoneLetter(entry.zoneId) : "–"}
-                    </Table.Cell>
+                    <Table.Cell whiteSpace="nowrap">{entry.zoneId ? zoneLetter(entry.zoneId) : "–"}</Table.Cell>
                     <Table.Cell minW="40">{describe(entry)}</Table.Cell>
                     <Table.Cell minW="24">
                       <Badge colorPalette={RESULT_COLORS[entry.result] ?? "red"}>

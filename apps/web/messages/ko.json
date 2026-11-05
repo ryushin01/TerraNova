@@ -126,7 +126,8 @@
     "selectModeOff": "선택 끝내기",
     "selectZone": "{zone} 구역 선택",
     "automation": "자동 제어",
-    "automationOn": "자동 제어"
+    "automationOn": "자동 제어",
+    "automationPaused": "{time}까지 직접 설정 유지 (자동 제어 중지)"
   },
   "nav": {
     "users": "사용자 관리",

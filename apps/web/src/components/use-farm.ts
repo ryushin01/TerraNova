@@ -1,16 +1,17 @@
 "use client";
 
 import {
-  DEFAULT_SOCKET_PORT,
-  type ClientToServerEvents,
   type AddCropResult,
+  type AutomationPauses,
   type AutomationRules,
+  type ClientToServerEvents,
   type ConfirmResult,
+  type ControlResult,
   type Crop,
   type CropIconKey,
-  type RemoveCropResult,
-  type ControlResult,
+  DEFAULT_SOCKET_PORT,
   type ManualActuator,
+  type RemoveCropResult,
   type ServerToClientEvents,
   type WateringCycle,
   type ZoneSnapshot,
@@ -42,6 +43,7 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
   const [connection, setConnection] = useState<Connection>("connecting");
   const [crops, setCrops] = useState<Crop[]>([]);
   const [timeZone, setTimeZone] = useState("");
+  const [automationPauses, setAutomationPauses] = useState<AutomationPauses>({});
   const [sections, setSections] = useState<Record<string, string>>({});
   const [zones, setZones] = useState<Record<string, ZoneSnapshot>>({});
   const [cycles, setCycles] = useState<Record<string, WateringCycle>>({});
@@ -66,10 +68,12 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
       if (error.message === "unauthorized") onSignedOutRef.current();
     });
     socket.on("crops:update", setCrops);
+    socket.on("automation:pauses", setAutomationPauses);
     socket.on("sections:update", setSections);
     socket.on("snapshot", (snapshot) => {
       setCrops(snapshot.crops);
       setTimeZone(snapshot.timeZone);
+      setAutomationPauses(snapshot.automationPauses);
       setSections(snapshot.sections);
       setZones(Object.fromEntries(snapshot.zones.map((zone) => [zone.zoneId, zone])));
       setCycles(Object.fromEntries(snapshot.cycles.map((cycle) => [cycle.zoneId, cycle])));
@@ -87,7 +91,9 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
   }, []);
 
   const request = useCallback(
-    async <T extends ConfirmResult | ControlResult | AddCropResult | RemoveCropResult>(send: (socket: FarmSocket) => Promise<T>) => {
+    async <T extends ConfirmResult | ControlResult | AddCropResult | RemoveCropResult>(
+      send: (socket: FarmSocket) => Promise<T>,
+    ) => {
       const socket = socketRef.current;
       if (!socket?.connected) return { ok: false, error: "internal" } as T;
       try {
@@ -145,17 +151,33 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
     [request],
   );
   const stopPump = useCallback(
-    (zoneId: string) =>
-      request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("pump:stop", zoneId)),
+    (zoneId: string) => request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("pump:stop", zoneId)),
     [request],
   );
   const setActuator = useCallback(
     (zoneId: string, actuator: ManualActuator, on: boolean) =>
-      request<ControlResult>((s) =>
-        s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("actuator:set", zoneId, actuator, on),
-      ),
+      request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("actuator:set", zoneId, actuator, on)),
     [request],
   );
 
-  return { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, updateCrop, setAutomation, reorderCrops, setAlarmTimes, removeCrop, stopPump, setActuator };
+  return {
+    connection,
+    automationPauses,
+    crops,
+    timeZone,
+    sections,
+    zones,
+    cycles,
+    confirmAlarm,
+    startWatering,
+    moveZones,
+    addCrop,
+    updateCrop,
+    setAutomation,
+    reorderCrops,
+    setAlarmTimes,
+    removeCrop,
+    stopPump,
+    setActuator,
+  };
 }

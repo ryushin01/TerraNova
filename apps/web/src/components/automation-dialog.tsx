@@ -1,9 +1,9 @@
 "use client";
 
 import { Button, Dialog, Field, Fieldset, HStack, Input, Portal, Stack, Text } from "@chakra-ui/react";
-import { normalizeAutomation, type AutomationRules, type ControlResult } from "@terranova/shared";
+import { type AutomationRules, type ControlResult, normalizeAutomation } from "@terranova/shared";
 import { useTranslations } from "next-intl";
-import { useState, type FormEvent } from "react";
+import { type FormEvent, useState } from "react";
 
 interface Props {
   section: { name: string; rules: AutomationRules } | null;
@@ -76,11 +76,25 @@ export function AutomationDialog({ section, onClose, onSave }: Props) {
                     <HStack align="flex-start">
                       <Field.Root>
                         <Field.Label>{t("ventOn")}</Field.Label>
-                        <Input name="vent-on" type="number" step="0.5" min={-20} max={60} defaultValue={rules?.ventOnAboveC ?? ""} />
+                        <Input
+                          name="vent-on"
+                          type="number"
+                          step="0.5"
+                          min={-20}
+                          max={60}
+                          defaultValue={rules?.ventOnAboveC ?? ""}
+                        />
                       </Field.Root>
                       <Field.Root>
                         <Field.Label>{t("ventOff")}</Field.Label>
-                        <Input name="vent-off" type="number" step="0.5" min={-20} max={60} defaultValue={rules?.ventOffBelowC ?? ""} />
+                        <Input
+                          name="vent-off"
+                          type="number"
+                          step="0.5"
+                          min={-20}
+                          max={60}
+                          defaultValue={rules?.ventOffBelowC ?? ""}
+                        />
                       </Field.Root>
                     </HStack>
                   </Fieldset.Root>
@@ -99,7 +113,14 @@ export function AutomationDialog({ section, onClose, onSave }: Props) {
                   </Fieldset.Root>
                   <Field.Root invalid={!!error}>
                     <Field.Label>{t("soil")}</Field.Label>
-                    <Input name="soil-alarm" type="number" step="1" min={1} max={69} defaultValue={rules?.soilAlarmBelowPct ?? ""} />
+                    <Input
+                      name="soil-alarm"
+                      type="number"
+                      step="1"
+                      min={1}
+                      max={69}
+                      defaultValue={rules?.soilAlarmBelowPct ?? ""}
+                    />
                     <Field.HelperText>{t("soilHelp")}</Field.HelperText>
                     {error && <Field.ErrorText data-automation-error>{error}</Field.ErrorText>}
                   </Field.Root>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Grid, HStack, Icon, Text, Wrap } from "@chakra-ui/react";
-import { SOIL_SUFFICIENT_PCT, type CropIconKey, type WateringState } from "@terranova/shared";
+import { type CropIconKey, SOIL_SUFFICIENT_PCT, type WateringState } from "@terranova/shared";
 import { useTranslations } from "next-intl";
 import { memo } from "react";
 import { CROP_ICONS } from "./crops";

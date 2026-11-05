@@ -1,12 +1,12 @@
 import { ac, roles } from "@terranova/shared/roles";
 import { betterAuth } from "better-auth";
-import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
-import { eq } from "drizzle-orm";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 import { admin } from "better-auth/plugins/admin";
+import { eq } from "drizzle-orm";
 import type { Database } from "./db";
 import { account, session, user, verification } from "./db/schema";
-import { ControlHistory, type Actor } from "./history";
+import { type Actor, ControlHistory } from "./history";
 
 export const MIN_PASSWORD_LENGTH = 8;
 
@@ -24,7 +24,10 @@ export function createAuth({ db, baseURL, secret, trustedOrigins }: AuthOptions)
   const history = new ControlHistory(db);
   const findUser = async (id: unknown) => {
     if (typeof id !== "string") return undefined;
-    const [found] = await db.select({ id: user.id, name: user.name, role: user.role }).from(user).where(eq(user.id, id));
+    const [found] = await db
+      .select({ id: user.id, name: user.name, role: user.role })
+      .from(user)
+      .where(eq(user.id, id));
     return found;
   };
 

@@ -1,41 +1,40 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import {
-  ZONE_IDS,
-  canControl,
-  SENSOR_RANGES,
-  isHistoryAction,
-  isSensorRange,
-  isManualActuator,
-  isZoneId,
-  parseAck,
-  parseTelemetry,
-  parseZoneStatus,
-  topics,
-  normalizeAlarmTimes,
   type AddCropResult,
   type ClientToServerEvents,
   type ConfirmResult,
   type ControlResult,
+  canControl,
   type HistoryAction,
   type HistoryPage,
-  type SensorSeries,
+  isHistoryAction,
+  isManualActuator,
+  isSensorRange,
+  isZoneId,
+  normalizeAlarmTimes,
+  parseAck,
+  parseTelemetry,
+  parseZoneStatus,
   type RemoveCropResult,
+  SENSOR_RANGES,
+  type SensorSeries,
   type ServerToClientEvents,
+  topics,
 } from "@terranova/shared";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import { count } from "drizzle-orm";
 import mqtt from "mqtt";
 import { Server, type Socket } from "socket.io";
-import { MIN_PASSWORD_LENGTH, type Auth } from "./auth";
-import type { Database } from "./db";
-import { user } from "./db/schema";
-import { PushNotifier, isPushEndpoint, parseSubscription, type PushConfig, type SendPush } from "./push";
+import { type Auth, MIN_PASSWORD_LENGTH } from "./auth";
 import { Automation } from "./automation";
 import { DeviceControls } from "./controls";
-import { SensorHistory } from "./sensors";
-import { ControlHistory, MAX_HISTORY_LIMIT, outcomeOf, type Actor, type HistoryEvent } from "./history";
+import type { Database } from "./db";
+import { user } from "./db/schema";
+import { type Actor, ControlHistory, type HistoryEvent, MAX_HISTORY_LIMIT, outcomeOf } from "./history";
+import { isPushEndpoint, type PushConfig, PushNotifier, parseSubscription, type SendPush } from "./push";
 import { ZoneSections } from "./sections";
-import { WateringService, localMinutes, type WateringConfig } from "./watering";
+import { SensorHistory } from "./sensors";
+import { localMinutes, type WateringConfig, WateringService } from "./watering";
 import { ZoneRegistry } from "./zones";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -413,6 +412,7 @@ export async function startApp(options: AppOptions) {
     Promise.all([watering.latestCycles(), sections.crops(), sections.assignments()])
       .then(([cycles, crops, assigned]) =>
         socket.emit("snapshot", {
+          automationPauses: automation.pauses(Date.now()),
           crops,
           timeZone: options.watering.timeZone,
           sections: assigned,
@@ -489,7 +489,11 @@ export async function startApp(options: AppOptions) {
         (result) => [
           {
             action: "crop_add",
-            detail: { crop: result.ok ? { id: result.crop.id, name: result.crop.name } : { id: "", name: String(name).slice(0, 60) } },
+            detail: {
+              crop: result.ok
+                ? { id: result.crop.id, name: result.crop.name }
+                : { id: "", name: String(name).slice(0, 60) },
+            },
             ...outcomeOf(result),
           },
         ],
@@ -542,7 +546,9 @@ export async function startApp(options: AppOptions) {
       whenAllowed<ControlResult>(
         socket,
         { ok: false, error: "forbidden" },
-        async (result) => [{ action: "automation_change", detail: { crop: await cropRef(cropId) }, ...outcomeOf(result) }],
+        async (result) => [
+          { action: "automation_change", detail: { crop: await cropRef(cropId) }, ...outcomeOf(result) },
+        ],
         async () => {
           if (!(await sections.setAutomation(cropId, rules))) return { ok: false, error: "invalid" };
           io.emit("crops:update", await sections.crops());
@@ -637,7 +643,10 @@ export async function startApp(options: AppOptions) {
         (result) => [{ action: "actuator_set", zoneId, detail: { actuator, on }, ...outcomeOf(result) }],
         async () => {
           const result = await controls.setActuator(zoneId, actuator, on);
-          if (result.ok) automation.noteManualChange(zoneId, actuator, Date.now());
+          if (result.ok) {
+            automation.noteManualChange(zoneId, actuator, Date.now());
+            io.emit("automation:pauses", automation.pauses(Date.now()));
+          }
           return result;
         },
       ).then(callback, () => callback({ ok: false, error: "internal" }));

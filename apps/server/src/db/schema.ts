@@ -1,6 +1,19 @@
 import type { AutomationRules, CropIconKey, HistoryAction, HistoryDetail, WateringState } from "@terranova/shared";
 import { sql } from "drizzle-orm";
-import { bigserial, boolean, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  bigserial,
+  boolean,
+  doublePrecision,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 const time = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 

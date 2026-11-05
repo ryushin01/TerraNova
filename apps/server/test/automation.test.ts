@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { normalizeAutomation, type AutomationRules, type ControlResult, type Telemetry } from "@terranova/shared";
+import { type AutomationRules, type ControlResult, normalizeAutomation, type Telemetry } from "@terranova/shared";
 import { Automation, desiredLight, desiredVent } from "../src/automation";
 
-const OFF: AutomationRules = { ventOnAboveC: null, ventOffBelowC: null, lightOnAt: null, lightOffAt: null, soilAlarmBelowPct: null };
+const OFF: AutomationRules = {
+  ventOnAboveC: null,
+  ventOffBelowC: null,
+  lightOnAt: null,
+  lightOffAt: null,
+  soilAlarmBelowPct: null,
+};
 
 const reading = (over: Partial<Telemetry> = {}, actuators: Partial<Telemetry["actuators"]> = {}): Telemetry => ({
   zoneId: "zone-a",
@@ -50,7 +56,13 @@ describe("rule decisions", () => {
 describe("validating rules", () => {
   test("accepts complete rules and blank ones", () => {
     expect(normalizeAutomation(OFF)).toEqual(OFF);
-    const full = { ventOnAboveC: 30, ventOffBelowC: 25, lightOnAt: "08:00", lightOffAt: "18:00", soilAlarmBelowPct: 30 };
+    const full = {
+      ventOnAboveC: 30,
+      ventOffBelowC: 25,
+      lightOnAt: "08:00",
+      lightOffAt: "18:00",
+      soilAlarmBelowPct: 30,
+    };
     expect(normalizeAutomation(full)).toEqual(full);
   });
 
@@ -133,6 +145,13 @@ describe("running rules", () => {
     expect(commands).toEqual([]);
     await automation.tick(30 * 60_000);
     expect(commands).toEqual([["vent", true]]);
+  });
+
+  test("holds can be read while they last, and disappear afterwards", () => {
+    expect(automation.pauses(0)).toEqual({});
+    automation.noteManualChange("zone-a", "vent", 0);
+    expect(automation.pauses(1000)).toEqual({ "zone-a|vent": new Date(30 * 60_000).toISOString() });
+    expect(automation.pauses(30 * 60_000)).toEqual({});
   });
 
   test("offline zones and sections without rules are skipped", async () => {

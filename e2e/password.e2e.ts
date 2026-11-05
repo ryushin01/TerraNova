@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import type { BrowserContext, Page } from "@playwright/test";
-import { ADMIN, Farm, createAdmin, createUser, expect, signIn, test, useStack } from "./fixtures";
+import { ADMIN, createAdmin, createUser, expect, Farm, signIn, test, useStack } from "./fixtures";
 
 const WORKER = { name: "김작업", email: "worker@terranova.test", password: "correct-horse-2", role: "operator" };
 const ORIGIN = "http://localhost:3000";
@@ -35,7 +35,11 @@ test.describe("passwords", () => {
 
   test.beforeAll(createAdmin);
 
-  test("an admin resets someone's password, ending that person's sign-ins at once", async ({ page, context, browser }) => {
+  test("an admin resets someone's password, ending that person's sign-ins at once", async ({
+    page,
+    context,
+    browser,
+  }) => {
     test.setTimeout(90_000);
     await signIn(context);
     await createUser(context, WORKER);
@@ -87,7 +91,11 @@ test.describe("passwords", () => {
     await workerContext.close();
   });
 
-  test("changing your own password checks the old one and keeps this page working", async ({ page, context, browser }) => {
+  test("changing your own password checks the old one and keeps this page working", async ({
+    page,
+    context,
+    browser,
+  }) => {
     // Waits out the server's 30-second session check, which is what would end this page's connection.
     test.setTimeout(120_000);
     await signIn(context);
@@ -129,7 +137,9 @@ test.describe("passwords", () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), "..");
     const env = { ...process.env, DATA_DIR: stack.dataDir };
 
-    await expect(run("bun", ["run", "admin:reset-password", ADMIN.email], { cwd: root, env })).rejects.toThrow(/Stop it first/);
+    await expect(run("bun", ["run", "admin:reset-password", ADMIN.email], { cwd: root, env })).rejects.toThrow(
+      /Stop it first/,
+    );
 
     await stack.stopServer();
     const { stdout } = await run("bun", ["run", "admin:reset-password", ADMIN.email], { cwd: root, env });
