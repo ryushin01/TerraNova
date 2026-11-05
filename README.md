@@ -8,7 +8,7 @@
 
 ## 기술 스택
 
-![Skills](https://skillicons.dev/icons?i=nextjs,react,ts,bun,postgres)
+![Next.js, React, TypeScript, Bun, PostgreSQL](https://skillicons.dev/icons?i=nextjs,react,ts,bun,postgres)
 
 | 구분 | 사용 기술 |
 |---|---|
