@@ -40,8 +40,8 @@ const app = await startApp({
   staleAfterMs: 5000,
   tickMs: 50,
   sessionSweepMs: 200,
+  defaultAlarmTimes: [],
   watering: {
-    times: [],
     timeZone: "Asia/Seoul",
     durationSec: 1,
     soilSufficientPct: 101,

@@ -1,6 +1,6 @@
 import type { CropIconKey, WateringState } from "@terranova/shared";
 import { sql } from "drizzle-orm";
-import { boolean, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 const time = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 
@@ -43,6 +43,9 @@ export const crops = pgTable(
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     icon: text("icon").$type<CropIconKey>().notNull(),
+    /** Null follows the default alarm times. An empty list means no alarms. */
+    alarmTimes: jsonb("alarm_times").$type<string[]>(),
+    scheduleUpdatedAt: time("schedule_updated_at"),
     createdAt: time("created_at").notNull().defaultNow(),
   },
   (table) => [uniqueIndex("crops_name_unique").on(sql`lower(${table.name})`)],

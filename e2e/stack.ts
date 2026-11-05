@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, openSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,11 +9,20 @@ const BACKEND = "http://127.0.0.1:4000";
 
 type Env = Record<string, string>;
 
+/** Set E2E_LOG_DIR to keep each process's output when a test needs diagnosing. */
+function logTarget(dir: string): number | "ignore" {
+  const logDir = process.env.E2E_LOG_DIR;
+  if (!logDir) return "ignore";
+  mkdirSync(logDir, { recursive: true });
+  return openSync(join(logDir, `${dir.replaceAll("/", "-")}.log`), "a");
+}
+
 function run(dir: string, env: Env): ChildProcess {
+  const output = logTarget(dir);
   return spawn("bun", ["src/index.ts"], {
     cwd: join(root, dir),
     env: { ...process.env, ...env },
-    stdio: "ignore",
+    stdio: ["ignore", output, output],
   });
 }
 

@@ -42,8 +42,9 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
-import { LuPlus } from "react-icons/lu";
+import { LuBell, LuPlus } from "react-icons/lu";
 import { AddCropDialog } from "./add-crop-dialog";
+import { AlarmTimesDialog } from "./alarm-times-dialog";
 import { CROP_ICONS } from "./crops";
 import { FieldLegend, FieldPlot, fieldLook } from "./field-plot";
 import { toaster } from "./toaster";
@@ -70,7 +71,8 @@ export function Dashboard() {
   const tCrops = useTranslations("crops");
   const [confirmWater, setConfirmWater] = useState<{ title: string; zoneIds: string[] } | null>(null);
   const [addingCrop, setAddingCrop] = useState(false);
-  const { connection, crops, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, removeCrop, stopPump, setActuator } =
+  const [editingTimes, setEditingTimes] = useState<{ id: string; name: string; times: string[] } | null>(null);
+  const { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, setAlarmTimes, removeCrop, stopPump, setActuator } =
     useFarm(
       () => router.replace("/login"),
       (cycle) => {
@@ -326,6 +328,24 @@ export function Dashboard() {
                 </Button>
               )}
             </Flex>
+            <HStack gap="2" textStyle="sm" color="fg.muted">
+              <Icon as={LuBell} aria-hidden />
+              <Text data-section-times={crop.id}>
+                {crop.alarmTimes.length > 0 ? crop.alarmTimes.join(", ") : t("noAlarmTimes")}
+              </Text>
+              {allowed && (
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  data-section-times-edit={crop.id}
+                  aria-label={t("editAlarmTimes", { section: cropName(crop) })}
+                  disabled={!connected}
+                  onClick={() => setEditingTimes({ id: crop.id, name: cropName(crop), times: crop.alarmTimes })}
+                >
+                  {t("change")}
+                </Button>
+              )}
+            </HStack>
             {members.length === 0 ? (
               <Text textStyle="sm" color="fg.muted">
                 {t("sectionEmpty")}
@@ -400,6 +420,13 @@ export function Dashboard() {
           </Dialog.Positioner>
         </Portal>
       </Dialog.Root>
+
+      <AlarmTimesDialog
+        section={editingTimes}
+        timeZone={timeZone}
+        onClose={() => setEditingTimes(null)}
+        onSave={(times) => setAlarmTimes(editingTimes!.id, times)}
+      />
 
       <AddCropDialog open={addingCrop} onClose={() => setAddingCrop(false)} onAdd={handleAddCrop} />
 

@@ -34,7 +34,8 @@ export interface AppOptions {
   mqttUrl: string;
   httpPort: number;
   allowedOrigins: string[];
-  watering: Omit<WateringConfig, "zoneIds">;
+  watering: WateringConfig;
+  defaultAlarmTimes: readonly string[];
   staleAfterMs: number;
   tickMs: number;
   enableDevRoutes: boolean;
@@ -63,7 +64,7 @@ export async function startApp(options: AppOptions) {
   const { allowedOrigins } = options;
   const isAllowedOrigin = (origin: string | undefined) => !origin || allowedOrigins.includes(origin);
   const zones = new ZoneRegistry(options.staleAfterMs);
-  const sections = new ZoneSections(options.db);
+  const sections = new ZoneSections(options.db, options.defaultAlarmTimes);
   await sections.init();
 
   const { auth, db } = options;
@@ -185,7 +186,8 @@ export async function startApp(options: AppOptions) {
   const watering = new WateringService({
     db: options.db,
     zones,
-    config: { ...options.watering, zoneIds: ZONE_IDS },
+    config: options.watering,
+    schedule: () => sections.schedule(),
     publish,
     onCycleChange: (cycle) => io.emit("cycle:update", cycle),
   });
@@ -222,7 +224,13 @@ export async function startApp(options: AppOptions) {
   io.on("connection", (socket) => {
     Promise.all([watering.latestCycles(), sections.crops(), sections.assignments()])
       .then(([cycles, crops, assigned]) =>
-        socket.emit("snapshot", { crops, sections: assigned, zones: zones.all(Date.now()), cycles }),
+        socket.emit("snapshot", {
+          crops,
+          timeZone: options.watering.timeZone,
+          sections: assigned,
+          zones: zones.all(Date.now()),
+          cycles,
+        }),
       )
       .catch((error) => console.error("[server] snapshot failed:", error));
 
@@ -276,6 +284,19 @@ export async function startApp(options: AppOptions) {
         if ("error" in outcome) return { ok: false, error: outcome.error } as AddCropResult;
         io.emit("crops:update", await sections.crops());
         return { ok: true, crop: outcome.crop } as AddCropResult;
+      }).then(callback, () => callback({ ok: false, error: "internal" }));
+    });
+
+    socket.on("crop:schedule", (cropId, times, callback) => {
+      if (typeof callback !== "function") return;
+      if (typeof cropId !== "string") {
+        callback({ ok: false, error: "invalid" });
+        return;
+      }
+      whenAllowed(socket, { ok: false, error: "forbidden" } as ControlResult, async () => {
+        if (!(await sections.setAlarmTimes(cropId, times))) return { ok: false, error: "invalid" } as ControlResult;
+        io.emit("crops:update", await sections.crops());
+        return { ok: true } as ControlResult;
       }).then(callback, () => callback({ ok: false, error: "internal" }));
     });
 

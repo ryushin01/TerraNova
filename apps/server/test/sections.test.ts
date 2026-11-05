@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -39,6 +39,60 @@ test("init never undoes a zone that was moved", async () => {
   await sections.move(["zone-a"], "rice");
   await sections.init();
   expect((await sections.assignments())["zone-a"]).toBe("rice");
+});
+
+describe("alarm times", () => {
+  const withDefaults = () => new ZoneSections(database.db, ["08:00", "18:00"]);
+  const scheduleOf = async (s: ZoneSections, zone: string) => (await s.schedule()).find((z) => z.zoneId === zone);
+
+  test("sections follow the default times until changed", async () => {
+    const s = withDefaults();
+    expect((await s.crops())[0]?.alarmTimes).toEqual(["08:00", "18:00"]);
+    expect(await scheduleOf(s, "zone-a")).toEqual({ zoneId: "zone-a", times: ["08:00", "18:00"], updatedAtMs: 0 });
+  });
+
+  test("saved times are sorted, de-duplicated and apply only to that section's zones", async () => {
+    const s = withDefaults();
+    const now = new Date("2026-11-05T00:00:00Z");
+    expect(await s.setAlarmTimes("rice", ["18:30", "06:00", "18:30"], now)).toBe(true);
+    expect(await scheduleOf(s, "zone-c")).toEqual({ zoneId: "zone-c", times: ["06:00", "18:30"], updatedAtMs: now.getTime() });
+    expect((await scheduleOf(s, "zone-a"))?.times).toEqual(["08:00", "18:00"]);
+  });
+
+  test("an empty list means no alarms, not the default", async () => {
+    const s = withDefaults();
+    await s.setAlarmTimes("rice", []);
+    expect((await scheduleOf(s, "zone-c"))?.times).toEqual([]);
+    expect((await s.crops()).find((c) => c.id === "rice")?.alarmTimes).toEqual([]);
+  });
+
+  test("a moved zone follows its new section", async () => {
+    const s = withDefaults();
+    await s.setAlarmTimes("rice", ["05:00"]);
+    await s.move(["zone-a"], "rice");
+    expect((await scheduleOf(s, "zone-a"))?.times).toEqual(["05:00"]);
+  });
+
+  test.each([
+    [["24:00"]],
+    [["8:00"]],
+    [["08:60"]],
+    [["08:00:00"]],
+    [[""]],
+    [[7]],
+    ["08:00"],
+    [null],
+    [Array.from({ length: 13 }, (_, i) => `0${i % 10}:${10 + i}`)],
+  ])("rejects %j and keeps the old times", async (times) => {
+    const s = withDefaults();
+    await s.setAlarmTimes("rice", ["05:00"]);
+    expect(await s.setAlarmTimes("rice", times)).toBe(false);
+    expect((await scheduleOf(s, "zone-c"))?.times).toEqual(["05:00"]);
+  });
+
+  test("an unknown crop is refused", async () => {
+    expect(await withDefaults().setAlarmTimes("nope", ["05:00"])).toBe(false);
+  });
 });
 
 test("a new crop gets an icon from its name, or the one chosen", async () => {

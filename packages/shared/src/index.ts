@@ -181,6 +181,20 @@ export interface Crop {
   id: string;
   name: string;
   icon: CropIconKey;
+  /** Daily local alarm times as HH:mm, sorted. Empty means no scheduled alarms. */
+  alarmTimes: string[];
+}
+
+export const MAX_ALARM_TIMES = 12;
+
+const ALARM_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Sorted and without duplicates, or null if anything isn't a valid time or there are too many. */
+export function normalizeAlarmTimes(times: unknown): string[] | null {
+  if (!Array.isArray(times)) return null;
+  if (!times.every((time) => typeof time === "string" && ALARM_TIME_PATTERN.test(time))) return null;
+  const unique = [...new Set(times as string[])].sort();
+  return unique.length <= MAX_ALARM_TIMES ? unique : null;
 }
 
 export const DEFAULT_ZONE_CROPS: Record<ZoneId, string> = {
@@ -202,6 +216,8 @@ export type RemoveCropResult =
 
 export interface FarmSnapshot {
   crops: Crop[];
+  /** The time zone alarm times are in. */
+  timeZone: string;
   sections: Record<string, string>;
   zones: ZoneSnapshot[];
   /** Latest cycle per zone. Sent on every connect, so alarms missed while away still appear. */
@@ -244,6 +260,7 @@ export interface ClientToServerEvents {
   "watering:start": (zoneId: string, callback: (result: ConfirmResult) => void) => void;
   "zones:move": (zoneIds: string[], cropId: string, callback: (result: ControlResult) => void) => void;
   "crop:add": (name: string, icon: CropIconKey, callback: (result: AddCropResult) => void) => void;
+  "crop:schedule": (cropId: string, times: string[], callback: (result: ControlResult) => void) => void;
   "crop:remove": (cropId: string, callback: (result: RemoveCropResult) => void) => void;
   "pump:stop": (zoneId: string, callback: (result: ControlResult) => void) => void;
   "actuator:set": (

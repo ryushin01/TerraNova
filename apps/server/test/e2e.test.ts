@@ -74,6 +74,7 @@ beforeAll(async () => {
     db: database.db,
     auth,
     sessionSweepMs: 100,
+    defaultAlarmTimes: [],
     mqttUrl: `mqtt://127.0.0.1:${MQTT_PORT}`,
     httpPort: HTTP_PORT,
     allowedOrigins: [ORIGIN],
@@ -81,7 +82,6 @@ beforeAll(async () => {
     staleAfterMs: 2000,
     tickMs: 50,
     watering: {
-      times: [],
       timeZone: "Asia/Seoul",
       durationSec: 2,
       soilSufficientPct: 101, // the simulator's soil is random, and this test needs watering to happen
@@ -214,6 +214,17 @@ test("moving zones and adding crops is shared with everyone and kept for new con
   expect(await new Promise((r) => socket.emit("crop:add", "", "tomato", r))).toEqual({ ok: false, error: "invalid" });
 });
 
+test("saving alarm times reaches everyone, and bad values are refused", async () => {
+  const pushed = new Promise<Crop[]>((resolve) => socket.once("crops:update", resolve));
+  expect(await new Promise((r) => socket.emit("crop:schedule", "lettuce", ["23:59", "00:00"], r))).toEqual({ ok: true });
+  expect((await pushed).find((c) => c.id === "lettuce")?.alarmTimes).toEqual(["00:00", "23:59"]);
+
+  expect(await new Promise((r) => socket.emit("crop:schedule", "lettuce", ["25:00"], r))).toEqual({ ok: false, error: "invalid" });
+  expect(await new Promise((r) => socket.emit("crop:schedule", "lettuce", "08:00" as never, r))).toEqual({ ok: false, error: "invalid" });
+  expect(await new Promise((r) => socket.emit("crop:schedule", 7 as never, [], r))).toEqual({ ok: false, error: "invalid" });
+  expect(await new Promise((r) => socket.emit("crop:schedule", "nope", [], r))).toEqual({ ok: false, error: "invalid" });
+});
+
 test("another website cannot open the control socket", async () => {
   const evil: Client = io(BASE, { extraHeaders: { origin: "https://evil.example", cookie: operatorCookie }, reconnection: false, transports: ["websocket"] });
   const outcome = await new Promise((resolve) => {
@@ -257,6 +268,7 @@ describe("access", () => {
     expect(await new Promise((r) => viewer.emit("zones:move", ["zone-a"], "rice", r))).toEqual({ ok: false, error: "forbidden" });
     expect(await new Promise((r) => viewer.emit("crop:add", "토마토", "tomato", r))).toEqual({ ok: false, error: "forbidden" });
     expect(await new Promise((r) => viewer.emit("crop:remove", "rice", r))).toEqual({ ok: false, error: "forbidden" });
+    expect(await new Promise((r) => viewer.emit("crop:schedule", "rice", ["05:00"], r))).toEqual({ ok: false, error: "forbidden" });
 
     const forbidden = { ok: false, error: "forbidden" };
     expect(await new Promise((r) => viewer.emit("pump:stop", "zone-a", r))).toEqual(forbidden);

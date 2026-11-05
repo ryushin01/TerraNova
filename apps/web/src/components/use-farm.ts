@@ -39,6 +39,7 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
   onCycleUpdateRef.current = onCycleUpdate;
   const [connection, setConnection] = useState<Connection>("connecting");
   const [crops, setCrops] = useState<Crop[]>([]);
+  const [timeZone, setTimeZone] = useState("");
   const [sections, setSections] = useState<Record<string, string>>({});
   const [zones, setZones] = useState<Record<string, ZoneSnapshot>>({});
   const [cycles, setCycles] = useState<Record<string, WateringCycle>>({});
@@ -61,6 +62,7 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
     socket.on("sections:update", setSections);
     socket.on("snapshot", (snapshot) => {
       setCrops(snapshot.crops);
+      setTimeZone(snapshot.timeZone);
       setSections(snapshot.sections);
       setZones(Object.fromEntries(snapshot.zones.map((zone) => [zone.zoneId, zone])));
       setCycles(Object.fromEntries(snapshot.cycles.map((cycle) => [cycle.zoneId, cycle])));
@@ -110,6 +112,11 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
       request<AddCropResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crop:add", name, icon)),
     [request],
   );
+  const setAlarmTimes = useCallback(
+    (cropId: string, times: string[]) =>
+      request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crop:schedule", cropId, times)),
+    [request],
+  );
   const removeCrop = useCallback(
     (cropId: string) =>
       request<RemoveCropResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crop:remove", cropId)),
@@ -128,5 +135,5 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
     [request],
   );
 
-  return { connection, crops, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, removeCrop, stopPump, setActuator };
+  return { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, setAlarmTimes, removeCrop, stopPump, setActuator };
 }

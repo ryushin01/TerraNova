@@ -109,7 +109,10 @@
     "bulkWaterResult": "{started} started, {excluded} excluded",
     "sectionRemove": "Remove section",
     "cropAdded": "Added the {name} section.",
-    "cropRemoveFailed": "It can't be removed while it still has zones."
+    "cropRemoveFailed": "It can't be removed while it still has zones.",
+    "noAlarmTimes": "No alarms",
+    "editAlarmTimes": "Change alarm times for {section}",
+    "change": "Change"
   },
   "nav": {
     "users": "Users",
@@ -172,5 +175,16 @@
     "cancel": "Cancel",
     "duplicate": "This crop already exists.",
     "failed": "Couldn't add it. Please try again."
+  },
+  "alarmTimes": {
+    "title": "{section} alarm times",
+    "none": "No alarms are set. Without a time, no scheduled alarm will sound.",
+    "remove": "Remove {time}",
+    "add": "Add a time",
+    "addButton": "Add",
+    "help": "In {timeZone}. A time that has already passed starts tomorrow.",
+    "failed": "Couldn't save. Please try again.",
+    "cancel": "Cancel",
+    "save": "Save"
   }
 }

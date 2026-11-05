@@ -8,8 +8,6 @@ const MINUTE = 60_000;
 const START = new Date("2026-11-05T00:00:00Z"); // 09:00 in Seoul
 
 const config: WateringConfig = {
-  zoneIds: ["zone-a", "zone-b"],
-  times: [],
   timeZone: "Asia/Seoul",
   durationSec: 30,
   soilSufficientPct: 70,
@@ -28,11 +26,18 @@ let publishFails: boolean;
 
 const now = () => new Date(nowMs);
 
-function service(overrides: Partial<WateringConfig> = {}) {
+interface ServiceOptions extends Partial<WateringConfig> {
+  zoneIds?: string[];
+  times?: string[];
+  updatedAtMs?: number;
+}
+
+function service({ zoneIds = ["zone-a", "zone-b"], times = [], updatedAtMs = 0, ...overrides }: ServiceOptions = {}) {
   return new WateringService({
     db: database.db,
     zones,
     config: { ...config, ...overrides },
+    schedule: async () => zoneIds.map((zoneId) => ({ zoneId, times, updatedAtMs })),
     now,
     publish: async (topic, payload) => {
       if (publishFails) throw new Error("broker down");
@@ -324,7 +329,7 @@ describe("an unanswered alarm", () => {
 
 describe("schedule", () => {
   test("alarms each zone once per slot, across repeated ticks and a restart", async () => {
-    const options = { times: ["09:00"] };
+    const options = { times: ["09:00"], zoneIds: ["zone-a", "zone-b"] };
     await service(options).tick();
     await service(options).tick();
     const cycles = await service(options).latestCycles();
@@ -364,11 +369,54 @@ describe("schedule", () => {
   });
 
   test("dueSlots uses the farm's time zone and ignores slots past their window", () => {
-    expect(dueSlots(START, "Asia/Seoul", ["09:00"], 30 * MINUTE)).toEqual(["2026-11-05T09:00"]);
-    expect(dueSlots(START, "UTC", ["09:00"], 30 * MINUTE)).toEqual([]);
-    expect(dueSlots(START, "Asia/Seoul", ["09:01"], 30 * MINUTE)).toEqual([]);
-    expect(dueSlots(START, "Asia/Seoul", ["08:30"], 30 * MINUTE)).toEqual([]);
-    expect(dueSlots(START, "Asia/Seoul", ["08:31"], 30 * MINUTE)).toEqual(["2026-11-05T08:31"]);
+    const slots = (timeZone: string, time: string) =>
+      dueSlots(START, timeZone, [time], 30 * MINUTE).map(({ slot }) => slot);
+    expect(slots("Asia/Seoul", "09:00")).toEqual(["2026-11-05T09:00"]);
+    expect(slots("UTC", "09:00")).toEqual([]);
+    expect(slots("Asia/Seoul", "09:01")).toEqual([]);
+    expect(slots("Asia/Seoul", "08:30")).toEqual([]);
+    expect(slots("Asia/Seoul", "08:31")).toEqual(["2026-11-05T08:31"]);
+    expect(dueSlots(START, "Asia/Seoul", ["08:50"], 30 * MINUTE)[0]?.startedMs).toBe(START.getTime() - 10 * MINUTE);
+  });
+
+  test("a restart recovers an alarm missed earlier in its window", async () => {
+    nowMs += 10 * MINUTE;
+    await service({ times: ["09:00"], updatedAtMs: START.getTime() - 60 * MINUTE }).tick();
+    expect((await lastState(service()))?.state).toBe("alarm_sent");
+  });
+
+  test("a time that had already passed when saved waits for tomorrow", async () => {
+    nowMs += 10 * MINUTE;
+    await service({ times: ["09:00"], updatedAtMs: nowMs }).tick();
+    expect(events).toHaveLength(0);
+
+    nowMs += 24 * 60 * MINUTE - 10 * MINUTE;
+    await service({ times: ["09:00"], updatedAtMs: START.getTime() + 10 * MINUTE }).tick();
+    expect((await lastState(service()))?.state).toBe("alarm_sent");
+  });
+
+  test("a time saved ahead of its minute alarms when it arrives", async () => {
+    const saved = nowMs - 30_000;
+    await service({ times: ["09:00"], updatedAtMs: saved }).tick();
+    expect((await lastState(service()))?.state).toBe("alarm_sent");
+  });
+
+  test("zones can have different times", async () => {
+    const s = new WateringService({
+      db: database.db,
+      zones,
+      config,
+      now,
+      publish: async () => {},
+      onCycleChange: (cycle) => events.push(cycle),
+      schedule: async () => [
+        { zoneId: "zone-a", times: ["09:00"], updatedAtMs: 0 },
+        { zoneId: "zone-b", times: ["18:00"], updatedAtMs: 0 },
+        { zoneId: "zone-c", times: [], updatedAtMs: 0 },
+      ],
+    });
+    await s.tick();
+    expect(events.map((e) => e.zoneId)).toEqual(["zone-a"]);
   });
 });
 

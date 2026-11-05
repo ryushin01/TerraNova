@@ -15,10 +15,14 @@ import type { Database } from "./db";
 import { wateringCycles, type WateringCycleRow } from "./db/schema";
 import type { ZoneRegistry } from "./zones";
 
-export interface WateringConfig {
-  zoneIds: readonly string[];
-  /** Daily local alarm times as HH:mm. */
+/** A zone's daily alarm times. Times that had already passed when they were saved are skipped. */
+export interface ZoneSchedule {
+  zoneId: string;
   times: readonly string[];
+  updatedAtMs: number;
+}
+
+export interface WateringConfig {
   /** Extra repeating alarms for demonstrations. Off when not set. */
   alarmEveryMs?: number;
   timeZone: string;
@@ -34,6 +38,7 @@ export interface WateringDeps {
   db: Database;
   zones: ZoneRegistry;
   config: WateringConfig;
+  schedule: () => Promise<ZoneSchedule[]>;
   publish: (topic: string, payload: string) => Promise<void>;
   onCycleChange: (cycle: WateringCycle) => void;
   now?: () => Date;
@@ -57,8 +62,13 @@ export function toCycleDto(row: WateringCycleRow): WateringCycle {
   };
 }
 
+export interface DueSlot {
+  slot: string;
+  startedMs: number;
+}
+
 /** Local slots due right now: their time has passed but the alarm would not yet have expired. */
-export function dueSlots(now: Date, timeZone: string, times: readonly string[], windowMs: number): string[] {
+export function dueSlots(now: Date, timeZone: string, times: readonly string[], windowMs: number): DueSlot[] {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat("en-CA", {
       timeZone,
@@ -73,14 +83,14 @@ export function dueSlots(now: Date, timeZone: string, times: readonly string[], 
       .map((part) => [part.type, part.value]),
   );
   const minutesNow = Number(parts.hour) * 60 + Number(parts.minute);
+  const minuteStartMs = Math.floor(now.getTime() / 60_000) * 60_000;
 
-  return times
-    .filter((time) => {
-      const [hour, minute] = time.split(":").map(Number);
-      const elapsedMs = (minutesNow - hour! * 60 - minute!) * 60_000;
-      return elapsedMs >= 0 && elapsedMs < windowMs;
-    })
-    .map((time) => `${parts.year}-${parts.month}-${parts.day}T${time}`);
+  return times.flatMap((time) => {
+    const [hour, minute] = time.split(":").map(Number);
+    const elapsedMs = (minutesNow - hour! * 60 - minute!) * 60_000;
+    if (!(elapsedMs >= 0 && elapsedMs < windowMs)) return [];
+    return [{ slot: `${parts.year}-${parts.month}-${parts.day}T${time}`, startedMs: minuteStartMs - elapsedMs }];
+  });
 }
 
 /**
@@ -260,21 +270,29 @@ export class WateringService {
   }
 
   private async createDueAlarms(): Promise<void> {
-    const { alarmEveryMs } = this.config;
-    const slots = dueSlots(this.now(), this.config.timeZone, this.config.times, this.config.alarmTimeoutMs);
-    if (alarmEveryMs) slots.push(`every-${alarmEveryMs}-${Math.floor(this.now().getTime() / alarmEveryMs)}`);
-    if (slots.length === 0) return;
+    const now = this.now();
+    const { alarmEveryMs, timeZone, alarmTimeoutMs } = this.config;
+    const repeating = alarmEveryMs ? `every-${alarmEveryMs}-${Math.floor(now.getTime() / alarmEveryMs)}` : null;
+
+    const due = (await this.deps.schedule()).flatMap(({ zoneId, times, updatedAtMs }) => {
+      const slots = dueSlots(now, timeZone, times, alarmTimeoutMs)
+        // A slot exists to recover alarms missed by a restart. A time that had already passed
+        // when someone saved it was never missed, so it starts tomorrow.
+        .filter(({ startedMs }) => startedMs >= updatedAtMs)
+        .map(({ slot }) => slot);
+      if (repeating) slots.push(repeating);
+      return slots.map((slot) => ({ zoneId, slot }));
+    });
+    if (due.length === 0) return;
 
     const existing = await this.db
       .select({ zoneId: wateringCycles.zoneId, slot: wateringCycles.slot })
       .from(wateringCycles)
-      .where(inArray(wateringCycles.slot, slots));
+      .where(inArray(wateringCycles.slot, [...new Set(due.map(({ slot }) => slot))]));
     const done = new Set(existing.map((row) => `${row.zoneId}|${row.slot}`));
 
-    for (const slot of slots) {
-      for (const zoneId of this.config.zoneIds) {
-        if (!done.has(`${zoneId}|${slot}`)) await this.createScheduledCycle(zoneId, slot);
-      }
+    for (const { zoneId, slot } of due) {
+      if (!done.has(`${zoneId}|${slot}`)) await this.createScheduledCycle(zoneId, slot);
     }
   }
 

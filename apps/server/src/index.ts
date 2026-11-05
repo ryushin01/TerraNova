@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEFAULT_MQTT_PORT, DEFAULT_SOCKET_PORT, SOIL_SUFFICIENT_PCT } from "@terranova/shared";
+import { DEFAULT_MQTT_PORT, DEFAULT_SOCKET_PORT, SOIL_SUFFICIENT_PCT, normalizeAlarmTimes } from "@terranova/shared";
 import { startApp } from "./app";
 import { createAuth } from "./auth";
 import { startBroker } from "./broker";
@@ -32,6 +32,14 @@ function loadAuthSecret(): string {
   return readFileSync(path, "utf8");
 }
 
+/** Times for sections nobody has changed yet. An empty value means no scheduled alarms. */
+function defaultAlarmTimes(): string[] {
+  const value = env.WATERING_TIMES ?? "08:00,18:00";
+  const times = normalizeAlarmTimes(value.split(",").map((time) => time.trim()).filter(Boolean));
+  if (!times) throw new Error(`WATERING_TIMES must be HH:mm values separated by commas: ${value}`);
+  return times;
+}
+
 const broker = await startBroker();
 const database = await openDatabase(dataDir);
 const app = await startApp({
@@ -46,12 +54,12 @@ const app = await startApp({
   httpPort: DEFAULT_SOCKET_PORT,
   allowedOrigins: webOrigins,
   sessionSweepMs: 30_000,
+  defaultAlarmTimes: defaultAlarmTimes(),
   enableDevRoutes: env.NODE_ENV !== "production",
   staleAfterMs: 15_000,
   tickMs: 1000,
   watering: {
     alarmEveryMs: env.ALARM_EVERY_MIN ? Number(env.ALARM_EVERY_MIN) * MINUTE : undefined,
-    times: (env.WATERING_TIMES ?? "08:00,18:00").split(",").map((time) => time.trim()),
     timeZone: env.TZ_NAME ?? "Asia/Seoul",
     durationSec: Number(env.WATERING_DURATION_SEC ?? 30),
     soilSufficientPct: SOIL_SUFFICIENT_PCT,

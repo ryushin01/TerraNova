@@ -109,7 +109,10 @@
     "bulkWaterResult": "{started}개 구역 시작, {excluded}개 구역 제외",
     "sectionRemove": "섹션 삭제",
     "cropAdded": "{name} 섹션을 추가했어요.",
-    "cropRemoveFailed": "구역이 남아 있어 삭제할 수 없어요."
+    "cropRemoveFailed": "구역이 남아 있어 삭제할 수 없어요.",
+    "noAlarmTimes": "알람 없음",
+    "editAlarmTimes": "{section} 섹션 알람 시간 변경",
+    "change": "변경"
   },
   "nav": {
     "users": "사용자 관리",
@@ -172,5 +175,16 @@
     "cancel": "취소",
     "duplicate": "이미 있는 작물이에요.",
     "failed": "추가하지 못했어요. 다시 시도해 주세요."
+  },
+  "alarmTimes": {
+    "title": "{section} 알람 시간",
+    "none": "정해진 알람이 없어요. 시간을 추가하지 않으면 정기 알람이 울리지 않아요.",
+    "remove": "{time} 삭제",
+    "add": "시간 추가",
+    "addButton": "추가",
+    "help": "{timeZone} 기준이에요. 이미 지난 시간은 다음 날부터 적용돼요.",
+    "failed": "저장하지 못했어요. 다시 시도해 주세요.",
+    "cancel": "취소",
+    "save": "저장"
   }
 }
