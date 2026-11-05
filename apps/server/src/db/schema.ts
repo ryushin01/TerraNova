@@ -1,6 +1,6 @@
-import type { CropIconKey, HistoryAction, HistoryDetail, WateringState } from "@terranova/shared";
+import type { AutomationRules, CropIconKey, HistoryAction, HistoryDetail, WateringState } from "@terranova/shared";
 import { sql } from "drizzle-orm";
-import { bigserial, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { bigserial, boolean, doublePrecision, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 const time = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 
@@ -28,6 +28,8 @@ export const wateringCycles = pgTable(
   },
   (table) => [
     uniqueIndex("watering_cycles_zone_slot").on(table.zoneId, table.slot),
+    // Finding each zone's latest cycle happens on every connection, and the table keeps growing.
+    index("watering_cycles_zone_created").on(table.zoneId, table.createdAt),
     // The database itself guarantees a zone never has two cycles in progress.
     uniqueIndex("watering_cycles_one_active_per_zone")
       .on(table.zoneId)
@@ -48,6 +50,7 @@ export const crops = pgTable(
     /** Null follows the default alarm times. An empty list means no alarms. */
     alarmTimes: jsonb("alarm_times").$type<string[]>(),
     scheduleUpdatedAt: time("schedule_updated_at"),
+    automation: jsonb("automation").$type<AutomationRules>(),
     createdAt: time("created_at").notNull().defaultNow(),
   },
   (table) => [uniqueIndex("crops_name_unique").on(sql`lower(${table.name})`)],
@@ -134,6 +137,18 @@ export const verification = pgTable("verification", {
   createdAt: time("created_at").notNull().defaultNow(),
   updatedAt: time("updated_at").notNull().defaultNow(),
 });
+
+export const sensorSamples = pgTable(
+  "sensor_samples",
+  {
+    zoneId: text("zone_id").notNull(),
+    at: time("at").notNull(),
+    temperatureC: doublePrecision("temperature_c").notNull(),
+    humidityPct: doublePrecision("humidity_pct").notNull(),
+    soilMoisturePct: doublePrecision("soil_moisture_pct").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.zoneId, table.at] }), index("sensor_samples_at").on(table.at)],
+);
 
 export const pushSubscriptions = pgTable("push_subscriptions", {
   endpoint: text("endpoint").primaryKey(),

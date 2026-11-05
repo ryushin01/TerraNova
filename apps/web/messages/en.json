@@ -121,7 +121,12 @@
     "editCrop": "Edit name and icon",
     "moveUp": "Move up",
     "moveDown": "Move down",
-    "cropUpdated": "Updated the {name} section."
+    "cropUpdated": "Updated the {name} section.",
+    "selectModeOn": "Select zones",
+    "selectModeOff": "Done selecting",
+    "selectZone": "Select zone {zone}",
+    "automation": "Automatic control",
+    "automationOn": "Automatic"
   },
   "nav": {
     "users": "Users",
@@ -135,7 +140,8 @@
     "notificationsEnabled": "Notifications are on.",
     "notificationsDisabled": "Notifications are off.",
     "notificationsDenied": "Please allow notifications in your browser settings.",
-    "notificationsUnavailable": "Notifications aren't available here. They need a certificate your browser trusts."
+    "notificationsUnavailable": "Notifications aren't available here. They need a certificate your browser trusts.",
+    "sensors": "Sensor history"
   },
   "roles": {
     "admin": "Admin",
@@ -246,7 +252,8 @@
       "crop_edit": "Edit crop {previous} → {name}",
       "crops_reorder": "Change section order",
       "password_change": "Change own password",
-      "password_reset": "Reset password for {name}"
+      "password_reset": "Reset password for {name}",
+      "automation_change": "Change {section} automatic control"
     },
     "filters": {
       "alarm_confirm": "Confirm alarm",
@@ -260,7 +267,8 @@
       "crop_edit": "Edit crop",
       "crops_reorder": "Change section order",
       "password_change": "Change password",
-      "password_reset": "Reset password"
+      "password_reset": "Reset password",
+      "automation_change": "Change automatic control"
     },
     "results": {
       "ok": "Success",
@@ -277,6 +285,10 @@
       "no_ack": "No response",
       "device_failed": "Device failed",
       "internal": "Error"
+    },
+    "actors": {
+      "system": "Automatic control",
+      "local": "Recovery command"
     }
   },
   "password": {
@@ -291,5 +303,43 @@
     "changeFailed": "The current password is wrong, or the new one can't be used.",
     "tooMany": "Too many attempts. Please try again shortly.",
     "changed": "Password changed."
+  },
+  "sensors": {
+    "title": "Sensor history",
+    "zone": "Zone",
+    "range": "Period",
+    "ranges": {
+      "1h": "1 hour",
+      "24h": "24 hours",
+      "7d": "7 days",
+      "30d": "30 days"
+    },
+    "temperatureC": "Temperature",
+    "humidityPct": "Humidity",
+    "soilMoisturePct": "Soil moisture",
+    "time": "Time",
+    "empty": "No readings in this period.",
+    "failed": "Couldn't load. Trying again shortly.",
+    "loading": "Loading",
+    "showTable": "Show table",
+    "hideTable": "Hide table",
+    "chartLabel": "{name} chart: {summary}",
+    "chartSummary": "low {min}{unit}, high {max}{unit}"
+  },
+  "automation": {
+    "title": "{section} automatic control",
+    "help": "Leave blank to turn off. Watering is never automatic. If you change a switch by hand, that device ignores rules for 30 minutes.",
+    "vent": "Ventilation",
+    "ventOn": "On at (°C or above)",
+    "ventOff": "Off at (°C or below)",
+    "light": "Lighting",
+    "lightOn": "On at",
+    "lightOff": "Off at",
+    "soil": "Soil moisture alarm (below %)",
+    "soilHelp": "Below this, an alarm is sent. Watering still needs confirming. Use 69 or less.",
+    "invalid": "Set both ventilation temperatures with \"on\" higher than \"off\", and two different lighting times.",
+    "failed": "Couldn't save. Please try again.",
+    "cancel": "Cancel",
+    "save": "Save"
   }
 }

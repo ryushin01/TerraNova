@@ -10,7 +10,7 @@ import {
   type WateringCycle,
   type WateringState,
 } from "@terranova/shared";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, notInArray } from "drizzle-orm";
 import type { Database } from "./db";
 import { wateringCycles, type WateringCycleRow } from "./db/schema";
 import type { ZoneRegistry } from "./zones";
@@ -44,6 +44,8 @@ export interface WateringDeps {
   now?: () => Date;
 }
 
+const CYCLE_RETENTION_DAYS = 90;
+
 const iso = (date: Date | null) => date?.toISOString() ?? null;
 
 export function toCycleDto(row: WateringCycleRow): WateringCycle {
@@ -60,6 +62,16 @@ export function toCycleDto(row: WateringCycleRow): WateringCycle {
     startedAt: iso(row.startedAt),
     finishedAt: iso(row.finishedAt),
   };
+}
+
+/** Minutes since local midnight in a time zone. */
+export function localMinutes(nowMs: number, timeZone: string): number {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", { timeZone, hourCycle: "h23", hour: "2-digit", minute: "2-digit" })
+      .formatToParts(nowMs)
+      .map((part) => [part.type, part.value]),
+  );
+  return Number(parts.hour) * 60 + Number(parts.minute);
 }
 
 export interface DueSlot {
@@ -125,6 +137,23 @@ export class WateringService {
   /** Starts an alarm outside the schedule. Returns null if the zone already has an active cycle. */
   triggerAlarm(zoneId: string): Promise<WateringCycle | null> {
     return this.createAlarm(zoneId, `manual-${randomUUID()}`);
+  }
+
+  /** Raises an alarm that fires at most once for this slot, for rules such as dry soil. */
+  raiseAlarm(zoneId: string, slot: string): Promise<WateringCycle | null> {
+    return this.createAlarm(zoneId, slot);
+  }
+
+  /** Removes finished cycles past the retention period. Anything in progress always stays. */
+  async prune(now = this.now()): Promise<void> {
+    await this.db
+      .delete(wateringCycles)
+      .where(
+        and(
+          lt(wateringCycles.createdAt, new Date(now.getTime() - CYCLE_RETENTION_DAYS * 24 * 60 * 60 * 1000)),
+          notInArray(wateringCycles.state, [...ACTIVE_WATERING_STATES]),
+        ),
+      );
   }
 
   /** Called when a person confirms an alarm. Only the first confirmation can start the pump. */

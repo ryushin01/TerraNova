@@ -2,7 +2,9 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import {
   ZONE_IDS,
   canControl,
+  SENSOR_RANGES,
   isHistoryAction,
+  isSensorRange,
   isManualActuator,
   isZoneId,
   parseAck,
@@ -16,6 +18,7 @@ import {
   type ControlResult,
   type HistoryAction,
   type HistoryPage,
+  type SensorSeries,
   type RemoveCropResult,
   type ServerToClientEvents,
 } from "@terranova/shared";
@@ -27,10 +30,12 @@ import { MIN_PASSWORD_LENGTH, type Auth } from "./auth";
 import type { Database } from "./db";
 import { user } from "./db/schema";
 import { PushNotifier, isPushEndpoint, parseSubscription, type PushConfig, type SendPush } from "./push";
+import { Automation } from "./automation";
 import { DeviceControls } from "./controls";
+import { SensorHistory } from "./sensors";
 import { ControlHistory, MAX_HISTORY_LIMIT, outcomeOf, type Actor, type HistoryEvent } from "./history";
 import { ZoneSections } from "./sections";
-import { WateringService, type WateringConfig } from "./watering";
+import { WateringService, localMinutes, type WateringConfig } from "./watering";
 import { ZoneRegistry } from "./zones";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -43,6 +48,8 @@ export interface AppOptions {
   allowedOrigins: string[];
   watering: WateringConfig;
   defaultAlarmTimes: readonly string[];
+  /** How often to store a reading per zone. */
+  sensorSampleMs?: number;
   /** Web Push for alarms. Off when not set. */
   push?: PushConfig & { send?: SendPush };
   staleAfterMs: number;
@@ -78,6 +85,7 @@ export async function startApp(options: AppOptions) {
   const sections = new ZoneSections(options.db, options.defaultAlarmTimes);
   await sections.init();
   const history = new ControlHistory(options.db);
+  const sensors = new SensorHistory(options.db, options.sensorSampleMs ?? 60_000);
   const push = options.push ? new PushNotifier(options.db, options.push, options.push.send) : null;
 
   const { auth, db } = options;
@@ -172,6 +180,38 @@ export async function startApp(options: AppOptions) {
     res.end(JSON.stringify({ ...page, timeZone: options.watering.timeZone } satisfies HistoryPage));
   };
 
+  const handleSensors = async (req: IncomingMessage, res: ServerResponse, query: URLSearchParams) => {
+    if (req.method !== "GET") {
+      res.writeHead(405).end();
+      return;
+    }
+    const current = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+      query: { disableRefresh: true },
+    });
+    if (!current) {
+      res.writeHead(401).end();
+      return;
+    }
+    const zoneId = query.get("zone");
+    const range = query.get("range");
+    if (!isZoneId(zoneId ?? undefined) || !isSensorRange(range)) {
+      res.writeHead(400).end();
+      return;
+    }
+    const nowMs = Date.now();
+    const { spanMs, bucketMs } = SENSOR_RANGES[range];
+    const body: SensorSeries = {
+      points: await sensors.series(zoneId!, range, nowMs),
+      fromMs: nowMs - spanMs,
+      toMs: nowMs,
+      bucketMs,
+      timeZone: options.watering.timeZone,
+    };
+    res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify(body));
+  };
+
   const handlePush = async (req: IncomingMessage, res: ServerResponse, path: string) => {
     if (!push) {
       res.writeHead(404).end();
@@ -224,6 +264,7 @@ export async function startApp(options: AppOptions) {
     if (url === "/api/setup") return handleSetup(req, res);
     const parsed = new URL(url, "http://localhost");
     if (parsed.pathname === "/api/history") return handleHistory(req, res, parsed.searchParams);
+    if (parsed.pathname === "/api/sensors") return handleSensors(req, res, parsed.searchParams);
     if (parsed.pathname.startsWith("/api/push/")) return handlePush(req, res, parsed.pathname);
 
     const zoneId = /^\/dev\/alarms\/([\w-]+)$/.exec(url)?.[1];
@@ -328,6 +369,19 @@ export async function startApp(options: AppOptions) {
     publish,
   });
 
+  const automation = new Automation({
+    schedule: () => sections.automationRules(),
+    liveReading: (zoneId, nowMs) => (zones.isOnline(zoneId, nowMs) ? zones.snapshot(zoneId, nowMs).telemetry : null),
+    setActuator: (zoneId, actuator, on) => controls.setActuator(zoneId, actuator, on),
+    raiseAlarm: (zoneId, slot) => watering.raiseAlarm(zoneId, slot),
+    localMinutes: (nowMs) => localMinutes(nowMs, options.watering.timeZone),
+    onSwitched: (zoneId, actuator, on, result) => {
+      void history.record({ id: "system", name: "자동 제어", role: "system" }, [
+        { action: "actuator_set", zoneId, detail: { actuator, on }, ...outcomeOf(result) },
+      ]);
+    },
+  });
+
   client.on("message", (topic, payload, packet) => {
     const zoneId = topic.split("/")[2];
     if (!isZoneId(zoneId)) return;
@@ -336,7 +390,11 @@ export async function startApp(options: AppOptions) {
 
     if (topic === topics.telemetry(zoneId)) {
       const telemetry = parseTelemetry(text);
-      if (telemetry) io.emit("zone:update", zones.recordTelemetry(zoneId, telemetry, now, packet.retain));
+      if (telemetry) {
+        io.emit("zone:update", zones.recordTelemetry(zoneId, telemetry, now, packet.retain));
+        // A retained message is an old value being replayed, not a new reading.
+        if (!packet.retain) void sensors.record(telemetry, now);
+      }
     } else if (topic === topics.status(zoneId)) {
       const status = parseZoneStatus(text);
       if (status) io.emit("zone:update", zones.recordStatus(zoneId, status.online, now));
@@ -475,6 +533,24 @@ export async function startApp(options: AppOptions) {
       ).then(callback, () => callback({ ok: false, error: "internal" }));
     });
 
+    socket.on("crop:automation", (cropId, rules, callback) => {
+      if (typeof callback !== "function") return;
+      if (typeof cropId !== "string") {
+        callback({ ok: false, error: "invalid" });
+        return;
+      }
+      whenAllowed<ControlResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        async (result) => [{ action: "automation_change", detail: { crop: await cropRef(cropId) }, ...outcomeOf(result) }],
+        async () => {
+          if (!(await sections.setAutomation(cropId, rules))) return { ok: false, error: "invalid" };
+          io.emit("crops:update", await sections.crops());
+          return { ok: true };
+        },
+      ).then(callback, () => callback({ ok: false, error: "internal" }));
+    });
+
     socket.on("crops:reorder", (cropIds, callback) => {
       if (typeof callback !== "function") return;
       whenAllowed<ControlResult>(
@@ -559,7 +635,11 @@ export async function startApp(options: AppOptions) {
         socket,
         { ok: false, error: "forbidden" },
         (result) => [{ action: "actuator_set", zoneId, detail: { actuator, on }, ...outcomeOf(result) }],
-        () => controls.setActuator(zoneId, actuator, on),
+        async () => {
+          const result = await controls.setActuator(zoneId, actuator, on);
+          if (result.ok) automation.noteManualChange(zoneId, actuator, Date.now());
+          return result;
+        },
       ).then(callback, () => callback({ ok: false, error: "internal" }));
     });
   });
@@ -576,7 +656,10 @@ export async function startApp(options: AppOptions) {
     sweeping = false;
   }, options.sessionSweepMs);
 
-  const pruneHistory = () => history.prune().catch((error) => console.error("[history] prune failed:", error));
+  const pruneHistory = () =>
+    Promise.all([history.prune(), watering.prune(), sensors.prune()]).catch((error) =>
+      console.error("[server] cleanup failed:", error),
+    );
   pruneHistory();
   const historyPrune = setInterval(pruneHistory, HISTORY_PRUNE_MS);
 
@@ -587,6 +670,8 @@ export async function startApp(options: AppOptions) {
     try {
       for (const zone of zones.sweepStale(Date.now())) io.emit("zone:update", zone);
       await watering.tick();
+      // After the watering tick, and separately, so a rule problem can't delay alarms or deadlines.
+      await automation.tick(Date.now()).catch((error) => console.error("[server] automation failed:", error));
     } catch (error) {
       console.error("[server] tick failed:", error);
     } finally {

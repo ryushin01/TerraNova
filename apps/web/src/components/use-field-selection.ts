@@ -51,6 +51,13 @@ export function useFieldSelection(enabled: boolean, onDrop: (zoneIds: string[], 
   onDropRef.current = onDrop;
 
   const clear = useCallback(() => setSelected((prev) => (prev.size ? new Set() : prev)), []);
+  const toggle = useCallback((zone: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(zone)) next.add(zone);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (!enabled) return;
@@ -214,5 +221,5 @@ export function useFieldSelection(enabled: boolean, onDrop: (zoneIds: string[], 
     };
   }, [enabled]);
 
-  return { selected, setSelected, clear, marquee, pointer, dropTarget };
+  return { selected, toggle, clear, marquee, pointer, dropTarget };
 }

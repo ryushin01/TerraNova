@@ -69,6 +69,7 @@ const app = await startApp({
   sessionSweepMs: 30_000,
   defaultAlarmTimes: defaultAlarmTimes(),
   push: loadPushKeys(),
+  sensorSampleMs: Number(env.SENSOR_SAMPLE_SEC ?? 60) * 1000,
   enableDevRoutes: env.NODE_ENV !== "production",
   staleAfterMs: 15_000,
   tickMs: 1000,

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { canTransition, parseCommand, topics, type WateringCycle } from "@terranova/shared";
 import { openDatabase } from "../src/db";
-import { WateringService, dueSlots, type WateringConfig } from "../src/watering";
+import { WateringService, dueSlots, localMinutes, type WateringConfig } from "../src/watering";
 import { ZoneRegistry } from "../src/zones";
 
 const MINUTE = 60_000;
@@ -418,6 +418,31 @@ describe("schedule", () => {
     await s.tick();
     expect(events.map((e) => e.zoneId)).toEqual(["zone-a"]);
   });
+});
+
+describe("cleaning up old cycles", () => {
+  const DAY = 24 * 60 * MINUTE;
+
+  test("removes finished cycles past 90 days, keeping newer ones and anything in progress", async () => {
+    const s = service();
+    reportZone("zone-a", 90);
+    const finished = (await s.triggerAlarm("zone-a"))!;
+    await s.confirm(finished.id);
+    await s.triggerAlarm("zone-b");
+
+    nowMs += 89 * DAY;
+    await s.prune();
+    expect((await s.latestCycles()).map((c) => c.zoneId)).toEqual(["zone-a", "zone-b"]);
+
+    nowMs += 2 * DAY;
+    await s.prune();
+    expect((await s.latestCycles()).map((c) => [c.zoneId, c.state])).toEqual([["zone-b", "alarm_sent"]]);
+  });
+});
+
+test("localMinutes follows the time zone", () => {
+  expect(localMinutes(START.getTime(), "Asia/Seoul")).toBe(9 * 60);
+  expect(localMinutes(START.getTime(), "UTC")).toBe(0);
 });
 
 test("a restart keeps the cycle: a new service finishes it from stored state", async () => {

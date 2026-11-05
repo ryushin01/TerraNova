@@ -1,14 +1,17 @@
 import {
   DEFAULT_ZONE_CROPS,
   ZONE_IDS,
+  NO_AUTOMATION,
   isCropIconKey,
   normalizeAlarmTimes,
+  normalizeAutomation,
   suggestCropIcon,
   type Crop,
   type CropIconKey,
 } from "@terranova/shared";
 import { asc, eq, max } from "drizzle-orm";
 import type { Database } from "./db";
+import type { ZoneRules } from "./automation";
 import type { ZoneSchedule } from "./watering";
 import { crops, zoneSections } from "./db/schema";
 
@@ -132,6 +135,21 @@ export class ZoneSections {
     return updated.length > 0;
   }
 
+  /** Returns false if the rules are invalid or the crop doesn't exist. */
+  async setAutomation(cropId: string, rules: unknown): Promise<boolean> {
+    const automation = normalizeAutomation(rules);
+    if (!automation) return false;
+    const updated = await this.db.update(crops).set({ automation }).where(eq(crops.id, cropId)).returning({ id: crops.id });
+    return updated.length > 0;
+  }
+
+  async automationRules(): Promise<ZoneRules[]> {
+    return this.db
+      .select({ zoneId: zoneSections.zoneId, rules: crops.automation })
+      .from(zoneSections)
+      .innerJoin(crops, eq(zoneSections.crop, crops.id));
+  }
+
   /** Each zone with the alarm times of its section, for the scheduler. */
   async schedule(): Promise<ZoneSchedule[]> {
     const rows = await this.db
@@ -149,8 +167,14 @@ export class ZoneSections {
     }));
   }
 
-  private toCrop({ id, name, icon, alarmTimes }: typeof crops.$inferSelect): Crop {
-    return { id, name, icon, alarmTimes: alarmTimes ?? [...this.defaultAlarmTimes] };
+  private toCrop({ id, name, icon, alarmTimes, automation }: typeof crops.$inferSelect): Crop {
+    return {
+      id,
+      name,
+      icon,
+      alarmTimes: alarmTimes ?? [...this.defaultAlarmTimes],
+      automation: automation ?? NO_AUTOMATION,
+    };
   }
 
   async removeCrop(cropId: string): Promise<RemoveCropOutcome> {

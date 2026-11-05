@@ -139,6 +139,8 @@ export function HistoryList() {
         return t("actions.crop_edit", { previous: detail.previousName ?? cropName(detail.crop), name: cropName(detail.crop) });
       case "password_reset":
         return t("actions.password_reset", { name: detail.target ?? "–" });
+      case "automation_change":
+        return t("actions.automation_change", { section: cropName(detail.crop) });
       case "alarm_times":
         return t("actions.alarm_times", {
           section: cropName(detail.crop),
@@ -214,7 +216,9 @@ export function HistoryList() {
                     <Table.Cell whiteSpace="nowrap" fontVariantNumeric="tabular-nums">
                       {format.dateTime(new Date(entry.at), { dateStyle: "short", timeStyle: "medium", timeZone })}
                     </Table.Cell>
-                    <Table.Cell whiteSpace="nowrap">{entry.actorName}</Table.Cell>
+                    <Table.Cell whiteSpace="nowrap">
+                      {t.has(`actors.${entry.actorRole}` as never) ? t(`actors.${entry.actorRole}` as never) : entry.actorName}
+                    </Table.Cell>
                     <Table.Cell whiteSpace="nowrap">
                       {entry.zoneId ? zoneLetter(entry.zoneId) : "–"}
                     </Table.Cell>

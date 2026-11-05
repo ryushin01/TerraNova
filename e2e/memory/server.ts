@@ -40,6 +40,7 @@ const app = await startApp({
   staleAfterMs: 5000,
   tickMs: 50,
   sessionSweepMs: 200,
+  sensorSampleMs: 100,
   defaultAlarmTimes: [],
   watering: {
     timeZone: "Asia/Seoul",
@@ -70,6 +71,15 @@ const main = connect();
 await connected(main);
 await Bun.sleep(1000);
 const timed = () => main.timeout(5000);
+
+// Rules on, so automation and sensor recording are part of what's measured on every tick.
+await timed().emitWithAck("crop:automation", "bellflower", {
+  ventOnAboveC: 5,
+  ventOffBelowC: 1,
+  lightOnAt: "00:00",
+  lightOffAt: "23:59",
+  soilAlarmBelowPct: null,
+});
 let cropNumber = 0;
 
 const loads: Record<string, () => Promise<void>> = {

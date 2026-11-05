@@ -121,7 +121,12 @@
     "editCrop": "이름, 아이콘 수정",
     "moveUp": "위로",
     "moveDown": "아래로",
-    "cropUpdated": "{name} 섹션을 수정했어요."
+    "cropUpdated": "{name} 섹션을 수정했어요.",
+    "selectModeOn": "여러 구역 선택",
+    "selectModeOff": "선택 끝내기",
+    "selectZone": "{zone} 구역 선택",
+    "automation": "자동 제어",
+    "automationOn": "자동 제어"
   },
   "nav": {
     "users": "사용자 관리",
@@ -135,7 +140,8 @@
     "notificationsEnabled": "알림을 켰어요.",
     "notificationsDisabled": "알림을 껐어요.",
     "notificationsDenied": "브라우저 설정에서 알림을 허용해 주세요.",
-    "notificationsUnavailable": "이 환경에서는 알림을 켤 수 없어요. 브라우저가 신뢰하는 인증서가 필요해요."
+    "notificationsUnavailable": "이 환경에서는 알림을 켤 수 없어요. 브라우저가 신뢰하는 인증서가 필요해요.",
+    "sensors": "센서 이력"
   },
   "roles": {
     "admin": "관리자",
@@ -246,7 +252,8 @@
       "crop_edit": "{previous} → {name} 작물 수정",
       "crops_reorder": "섹션 순서 변경",
       "password_change": "내 비밀번호 변경",
-      "password_reset": "{name} 비밀번호 재설정"
+      "password_reset": "{name} 비밀번호 재설정",
+      "automation_change": "{section} 자동 제어 변경"
     },
     "filters": {
       "alarm_confirm": "알람 확인",
@@ -260,7 +267,8 @@
       "crop_edit": "작물 수정",
       "crops_reorder": "섹션 순서 변경",
       "password_change": "비밀번호 변경",
-      "password_reset": "비밀번호 재설정"
+      "password_reset": "비밀번호 재설정",
+      "automation_change": "자동 제어 변경"
     },
     "results": {
       "ok": "성공",
@@ -277,6 +285,10 @@
       "no_ack": "응답 없음",
       "device_failed": "장비 실패",
       "internal": "오류"
+    },
+    "actors": {
+      "system": "자동 제어",
+      "local": "복구 명령"
     }
   },
   "password": {
@@ -291,5 +303,43 @@
     "changeFailed": "현재 비밀번호가 맞지 않거나 새 비밀번호를 사용할 수 없어요.",
     "tooMany": "시도가 너무 많아요. 잠시 후 다시 시도해 주세요.",
     "changed": "비밀번호를 변경했어요."
+  },
+  "sensors": {
+    "title": "센서 이력",
+    "zone": "구역",
+    "range": "기간",
+    "ranges": {
+      "1h": "1시간",
+      "24h": "24시간",
+      "7d": "7일",
+      "30d": "30일"
+    },
+    "temperatureC": "온도",
+    "humidityPct": "습도",
+    "soilMoisturePct": "토양 수분",
+    "time": "시각",
+    "empty": "이 기간에 기록된 값이 없어요.",
+    "failed": "불러오지 못했어요. 잠시 후 다시 시도해요.",
+    "loading": "불러오는 중",
+    "showTable": "표로 보기",
+    "hideTable": "표 닫기",
+    "chartLabel": "{name} 차트: {summary}",
+    "chartSummary": "최저 {min}{unit}, 최고 {max}{unit}"
+  },
+  "automation": {
+    "title": "{section} 자동 제어",
+    "help": "비워 두면 꺼져요. 물은 자동으로 주지 않아요. 스위치를 직접 바꾸면 그 장치는 30분 동안 규칙을 따르지 않아요.",
+    "vent": "환기",
+    "ventOn": "켜는 온도 (°C 이상)",
+    "ventOff": "끄는 온도 (°C 이하)",
+    "light": "조명",
+    "lightOn": "켜는 시각",
+    "lightOff": "끄는 시각",
+    "soil": "토양 수분 알람 (% 미만)",
+    "soilHelp": "이 값 아래로 내려가면 알람만 보내요. 물을 주려면 확인이 필요해요. 69 이하로 정해 주세요.",
+    "invalid": "환기는 켜는 온도와 끄는 온도를 함께 정하고 켜는 온도를 더 높게, 조명은 두 시각을 함께 서로 다르게 입력해 주세요.",
+    "failed": "저장하지 못했어요. 다시 시도해 주세요.",
+    "cancel": "취소",
+    "save": "저장"
   }
 }

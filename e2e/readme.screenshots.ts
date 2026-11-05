@@ -1,7 +1,9 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
+import { execFileSync } from "node:child_process";
 import { Farm, createAdmin, createUser, expect, signIn, test, useStack } from "./fixtures";
+import { Stack } from "./stack";
 
 const images = join(dirname(fileURLToPath(import.meta.url)), "../docs/images");
 
@@ -130,5 +132,39 @@ test.describe("README screenshots", () => {
       await farm.expectLook("zone-a", "alarm");
       await shoot(page, "mobile");
     });
+  });
+});
+
+test.describe("README screenshots with recorded readings", () => {
+  const stack = new Stack({ WATERING_TIMES: "08:00,18:00" });
+
+  test.beforeAll(async () => {
+    execFileSync("bun", [join(dirname(fileURLToPath(import.meta.url)), "seed-sensors.ts"), stack.dataDir]);
+    await stack.start();
+    await createAdmin();
+  });
+  test.afterAll(() => stack.stop());
+  test.beforeEach(({ context }) => signIn(context));
+
+  test.use({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
+
+  test("sensor history", async ({ page }) => {
+    await page.goto("/ko/sensors");
+    await expect(page.locator('[data-sensor-chart="soilMoisturePct"] .recharts-line')).toBeVisible();
+    await shoot(page, "sensors");
+  });
+
+  test("automatic control", async ({ page }) => {
+    const farm = new Farm(page);
+    await farm.open();
+    await page.locator('[data-section-more="rice"]').click();
+    await page.locator('[data-section-more-items="rice"]').getByRole("menuitem", { name: "자동 제어" }).click();
+    await page.locator('[name="vent-on"]').fill("30");
+    await page.locator('[name="vent-off"]').fill("25");
+    await page.locator('[name="light-on"]').fill("06:00");
+    await page.locator('[name="light-off"]').fill("18:00");
+    await page.locator('[name="soil-alarm"]').fill("30");
+    await page.evaluate(() => scrollTo(0, 0));
+    await shoot(page, "automation");
   });
 });

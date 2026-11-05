@@ -64,6 +64,9 @@ export function AppHeader({ title }: { title: string }) {
                   <Menu.Item value="dashboard" asChild>
                     <Link href="/">{t("dashboard")}</Link>
                   </Menu.Item>
+                  <Menu.Item value="sensors" asChild>
+                    <Link href="/sensors">{t("sensors")}</Link>
+                  </Menu.Item>
                   {canControl(session.user.role) && (
                     <Menu.Item value="history" asChild>
                       <Link href="/history">{t("history")}</Link>

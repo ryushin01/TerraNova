@@ -1,7 +1,7 @@
 import type { CDPSession, Page } from "@playwright/test";
 import { Farm, createAdmin, expect, signIn, test, useStack } from "../fixtures";
 
-const ROUNDS = 10;
+const ROUNDS = Number(process.env.MEMORY_ROUNDS ?? 20);
 
 async function measure(page: Page, cdp: CDPSession) {
   await cdp.send("HeapProfiler.collectGarbage");
@@ -27,6 +27,7 @@ test.describe("browser memory", () => {
   test.beforeAll(createAdmin);
 
   test("repeated use leaves nothing behind", async ({ page, context }) => {
+    test.setTimeout(ROUNDS * 30_000);
     await signIn(context);
     const farm = new Farm(page);
     const cdp = await context.newCDPSession(page);
@@ -77,6 +78,9 @@ test.describe("browser memory", () => {
       await expect(farm.card("zone-f").getByRole("progressbar")).toHaveAttribute("aria-valuenow", /\d/);
       await page.waitForTimeout(1000);
 
+      // The connection starts on HTTP polling and upgrades a moment later, so wait for it. A leak
+      // would show as more than one, and the assertion below still catches that.
+      await expect.poll(() => openSockets, { timeout: 10_000 }).toBeGreaterThanOrEqual(1);
       const sample = await measure(page, cdp);
       samples.push(sample);
       console.log(
@@ -90,7 +94,12 @@ test.describe("browser memory", () => {
     expect(last.nodes).toBeLessThanOrEqual(warm.nodes * 1.05);
     expect(last.cssRules).toBeLessThanOrEqual(warm.cssRules + 10);
     expect(last.listeners).toBeLessThanOrEqual(warm.listeners * 1.25);
-    const heapPeak = Math.max(...samples.slice(2).map((sample) => sample.heapMB));
-    expect(last.heapMB).toBeLessThanOrEqual(heapPeak);
+    // Heap moves around between rounds, so compare averages: late rounds against early ones.
+    const heaps = samples.slice(2).map((sample) => sample.heapMB);
+    const half = Math.floor(heaps.length / 2);
+    const average = (values: number[]) => values.reduce((total, value) => total + value, 0) / values.length;
+    const growth = average(heaps.slice(half)) / average(heaps.slice(0, half));
+    console.log(`heap, later half against earlier half: ${growth.toFixed(2)}x`);
+    expect(growth).toBeLessThan(1.25);
   });
 });

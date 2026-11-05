@@ -183,6 +183,87 @@ export interface Crop {
   icon: CropIconKey;
   /** Daily local alarm times as HH:mm, sorted. Empty means no scheduled alarms. */
   alarmTimes: string[];
+  automation: AutomationRules;
+}
+
+/** Each part is off while null. There is deliberately no rule that can start a pump. */
+export interface AutomationRules {
+  ventOnAboveC: number | null;
+  ventOffBelowC: number | null;
+  lightOnAt: string | null;
+  lightOffAt: string | null;
+  /** Raises an alarm, which someone still has to confirm. */
+  soilAlarmBelowPct: number | null;
+}
+
+export const NO_AUTOMATION: AutomationRules = {
+  ventOnAboveC: null,
+  ventOffBelowC: null,
+  lightOnAt: null,
+  lightOffAt: null,
+  soilAlarmBelowPct: null,
+};
+
+/** Paired settings must be both set or both blank, or a rule could only ever switch one way. */
+export function normalizeAutomation(value: unknown): AutomationRules | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const number = (item: unknown, min: number, max: number) =>
+    typeof item === "number" && Number.isFinite(item) && item >= min && item <= max;
+  const time = (item: unknown) => typeof item === "string" && normalizeAlarmTimes([item]) !== null;
+
+  const ventOnAboveC = v.ventOnAboveC ?? null;
+  const ventOffBelowC = v.ventOffBelowC ?? null;
+  const lightOnAt = v.lightOnAt ?? null;
+  const lightOffAt = v.lightOffAt ?? null;
+  const soilAlarmBelowPct = v.soilAlarmBelowPct ?? null;
+
+  const ventBlank = ventOnAboveC === null && ventOffBelowC === null;
+  const ventValid =
+    number(ventOnAboveC, -20, 60) && number(ventOffBelowC, -20, 60) && (ventOffBelowC as number) < (ventOnAboveC as number);
+  const lightBlank = lightOnAt === null && lightOffAt === null;
+  const lightValid = time(lightOnAt) && time(lightOffAt) && lightOnAt !== lightOffAt;
+  // At or above the sufficient level, the alarm could never lead to watering.
+  const soilValid = soilAlarmBelowPct === null || number(soilAlarmBelowPct, 1, SOIL_SUFFICIENT_PCT - 1);
+
+  if (!(ventBlank || ventValid) || !(lightBlank || lightValid) || !soilValid) return null;
+  return {
+    ventOnAboveC: ventOnAboveC as number | null,
+    ventOffBelowC: ventOffBelowC as number | null,
+    lightOnAt: lightOnAt as string | null,
+    lightOffAt: lightOffAt as string | null,
+    soilAlarmBelowPct: soilAlarmBelowPct as number | null,
+  };
+}
+
+const HOUR_MS = 60 * 60 * 1000;
+
+export const SENSOR_RANGES = {
+  "1h": { spanMs: HOUR_MS, bucketMs: 60 * 1000 },
+  "24h": { spanMs: 24 * HOUR_MS, bucketMs: 10 * 60 * 1000 },
+  "7d": { spanMs: 7 * 24 * HOUR_MS, bucketMs: HOUR_MS },
+  "30d": { spanMs: 30 * 24 * HOUR_MS, bucketMs: 6 * HOUR_MS },
+} as const;
+
+export type SensorRange = keyof typeof SENSOR_RANGES;
+
+export function isSensorRange(value: unknown): value is SensorRange {
+  return typeof value === "string" && Object.hasOwn(SENSOR_RANGES, value);
+}
+
+export interface SensorPoint {
+  at: string;
+  temperatureC: number;
+  humidityPct: number;
+  soilMoisturePct: number;
+}
+
+export interface SensorSeries {
+  points: SensorPoint[];
+  fromMs: number;
+  toMs: number;
+  bucketMs: number;
+  timeZone: string;
 }
 
 export const MAX_ALARM_TIMES = 12;
@@ -255,6 +336,7 @@ export const HISTORY_ACTIONS = [
   "crops_reorder",
   "password_change",
   "password_reset",
+  "automation_change",
 ] as const;
 export type HistoryAction = (typeof HISTORY_ACTIONS)[number];
 
@@ -315,6 +397,7 @@ export interface ClientToServerEvents {
   "crop:add": (name: string, icon: CropIconKey, callback: (result: AddCropResult) => void) => void;
   "crop:schedule": (cropId: string, times: string[], callback: (result: ControlResult) => void) => void;
   "crop:update": (cropId: string, name: string, icon: CropIconKey, callback: (result: AddCropResult) => void) => void;
+  "crop:automation": (cropId: string, rules: AutomationRules, callback: (result: ControlResult) => void) => void;
   "crops:reorder": (cropIds: string[], callback: (result: ControlResult) => void) => void;
   "crop:remove": (cropId: string, callback: (result: RemoveCropResult) => void) => void;
   "pump:stop": (zoneId: string, callback: (result: ControlResult) => void) => void;

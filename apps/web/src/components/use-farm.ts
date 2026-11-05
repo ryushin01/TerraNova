@@ -4,6 +4,7 @@ import {
   DEFAULT_SOCKET_PORT,
   type ClientToServerEvents,
   type AddCropResult,
+  type AutomationRules,
   type ConfirmResult,
   type Crop,
   type CropIconKey,
@@ -123,6 +124,11 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
       request<AddCropResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crop:update", cropId, name, icon)),
     [request],
   );
+  const setAutomation = useCallback(
+    (cropId: string, rules: AutomationRules) =>
+      request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crop:automation", cropId, rules)),
+    [request],
+  );
   const reorderCrops = useCallback(
     (cropIds: string[]) =>
       request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crops:reorder", cropIds)),
@@ -151,5 +157,5 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
     [request],
   );
 
-  return { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, updateCrop, reorderCrops, setAlarmTimes, removeCrop, stopPump, setActuator };
+  return { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, updateCrop, setAutomation, reorderCrops, setAlarmTimes, removeCrop, stopPump, setActuator };
 }

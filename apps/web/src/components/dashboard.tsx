@@ -6,6 +6,7 @@ import {
   ActionBar,
   Box,
   Button,
+  Checkbox,
   CloseButton,
   Card,
   DataList,
@@ -46,6 +47,7 @@ import { authClient } from "@/lib/auth-client";
 import { LuBell, LuPlus } from "react-icons/lu";
 import { AddCropDialog } from "./add-crop-dialog";
 import { AlarmTimesDialog } from "./alarm-times-dialog";
+import { AutomationDialog } from "./automation-dialog";
 import { CROP_ICONS } from "./crops";
 import { FieldLegend, FieldPlot, fieldLook } from "./field-plot";
 import { toaster } from "./toaster";
@@ -73,9 +75,11 @@ export function Dashboard() {
   const [confirmWater, setConfirmWater] = useState<{ title: string; zoneIds: string[]; alarms?: boolean } | null>(null);
   const [showAlarmList, setShowAlarmList] = useState(false);
   const [editingCrop, setEditingCrop] = useState<Crop | null>(null);
+  const [editingRules, setEditingRules] = useState<Crop | null>(null);
+  const [selecting, setSelecting] = useState(false);
   const [addingCrop, setAddingCrop] = useState(false);
   const [editingTimes, setEditingTimes] = useState<{ id: string; name: string; times: string[] } | null>(null);
-  const { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, updateCrop, reorderCrops, setAlarmTimes, removeCrop, stopPump, setActuator } =
+  const { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, updateCrop, setAutomation, reorderCrops, setAlarmTimes, removeCrop, stopPump, setActuator } =
     useFarm(
       () => router.replace("/login"),
       (cycle) => {
@@ -90,7 +94,7 @@ export function Dashboard() {
   const allowed = canControl(session?.user.role);
   const cropName = (crop: Crop) =>
     crop.name === BUILTIN_CROP_NAMES[crop.id] && tCrops.has(crop.id as never) ? tCrops(crop.id as never) : crop.name;
-  const { selected, clear, marquee, pointer, dropTarget } = useFieldSelection(allowed, (zoneIds, cropId) => {
+  const { selected, toggle, clear, marquee, pointer, dropTarget } = useFieldSelection(allowed, (zoneIds, cropId) => {
     const moving = zoneIds.filter((id) => sections[id] !== cropId);
     if (moving.length > 0) run(`move:${moving.join()}`, () => moveZones(moving, cropId));
   });
@@ -315,10 +319,23 @@ export function Dashboard() {
           <Text textStyle="sm" color="fg.muted" hideBelow="md">
             {t("selectionHint")}
           </Text>
-          <Button variant="outline" ms="auto" data-add-crop disabled={!connected} onClick={() => setAddingCrop(true)}>
+          <HStack gap="2" ms="auto">
+          <Button
+            variant={selecting ? "solid" : "outline"}
+            data-select-mode
+            aria-pressed={selecting}
+            onClick={() => {
+              if (selecting) clear();
+              setSelecting(!selecting);
+            }}
+          >
+            {t(selecting ? "selectModeOff" : "selectModeOn")}
+          </Button>
+          <Button variant="outline" data-add-crop disabled={!connected} onClick={() => setAddingCrop(true)}>
             <LuPlus aria-hidden />
             {t("addCrop")}
           </Button>
+          </HStack>
         </Flex>
       )}
 
@@ -354,6 +371,7 @@ export function Dashboard() {
                     unmountOnExit
                     onSelect={({ value }) => {
                       if (value === "edit") setEditingCrop(crop);
+                      else if (value === "automation") setEditingRules(crop);
                       else moveSection(crop, value === "up" ? -1 : 1);
                     }}
                   >
@@ -372,6 +390,7 @@ export function Dashboard() {
                       <Menu.Positioner>
                         <Menu.Content data-section-more-items={crop.id}>
                           <Menu.Item value="edit">{t("editCrop")}</Menu.Item>
+                          <Menu.Item value="automation">{t("automation")}</Menu.Item>
                           <Menu.Item value="up" disabled={crops[0]?.id === crop.id}>
                             {t("moveUp")}
                           </Menu.Item>
@@ -419,6 +438,11 @@ export function Dashboard() {
               <Text data-section-times={crop.id}>
                 {crop.alarmTimes.length > 0 ? crop.alarmTimes.join(", ") : t("noAlarmTimes")}
               </Text>
+              {Object.values(crop.automation).some((rule) => rule !== null) && (
+                <Badge colorPalette="blue" data-section-auto={crop.id}>
+                  {t("automationOn")}
+                </Badge>
+              )}
               {allowed && (
                 <Button
                   variant="ghost"
@@ -444,6 +468,8 @@ export function Dashboard() {
                       zoneId={zoneId}
                       crop={crop}
                       selected={selected.has(zoneId)}
+                      selecting={selecting}
+                      onToggleSelect={() => toggle(zoneId)}
                       dragging={!!pointer && selected.has(zoneId)}
                       group={selected.has(zoneId) && selectedIds.length > 1 ? selectedIds : null}
                       bulkItems={bulkControlItems}
@@ -513,6 +539,12 @@ export function Dashboard() {
         timeZone={timeZone}
         onClose={() => setEditingTimes(null)}
         onSave={(times) => setAlarmTimes(editingTimes!.id, times)}
+      />
+
+      <AutomationDialog
+        section={editingRules && { name: cropName(editingRules), rules: editingRules.automation }}
+        onClose={() => setEditingRules(null)}
+        onSave={(rules) => setAutomation(editingRules!.id, rules)}
       />
 
       <AddCropDialog open={addingCrop} onClose={() => setAddingCrop(false)} onSubmit={handleAddCrop} />
@@ -616,6 +648,8 @@ interface ZoneCardProps {
   zoneId: string;
   crop: Crop;
   selected: boolean;
+  selecting: boolean;
+  onToggleSelect: () => void;
   dragging: boolean;
   /** All selected zones, when this card is part of a selection of two or more. */
   group: string[] | null;
@@ -638,6 +672,8 @@ function ZoneCard({
   zoneId,
   crop,
   selected,
+  selecting,
+  onToggleSelect,
   dragging,
   group,
   bulkItems,
@@ -753,7 +789,21 @@ function ZoneCard({
     >
       <Card.Body gap="3" p="4">
         <Flex justify="space-between" align="center" gap="2">
-          <Card.Title>{t("zone", { id: zoneName })}</Card.Title>
+          <HStack gap="2">
+            {selecting && (
+              <Checkbox.Root
+                size="lg"
+                data-select-zone={zoneId}
+                checked={selected}
+                onCheckedChange={onToggleSelect}
+                aria-label={t("selectZone", { zone: zoneName })}
+              >
+                <Checkbox.HiddenInput aria-label={t("selectZone", { zone: zoneName })} />
+                <Checkbox.Control />
+              </Checkbox.Root>
+            )}
+            <Card.Title>{t("zone", { id: zoneName })}</Card.Title>
+          </HStack>
           <HStack gap="2">
             {(online || showOffline) && (
               <Status.Root colorPalette={online ? "green" : "gray"} size="sm">

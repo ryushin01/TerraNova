@@ -43,6 +43,13 @@
       "when": 1793856184576,
       "tag": "0005_fantastic_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793857440594,
+      "tag": "0006_broken_energizer",
+      "breakpoints": true
     }
   ]
 }
