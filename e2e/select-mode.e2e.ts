@@ -91,7 +91,8 @@ test.describe("selecting without a mouse", () => {
 
     await page.locator("[data-selection-move]").focus();
     await page.keyboard.press("Enter");
-    await expect(page.locator("[data-selection-move-items]")).toBeVisible();
+    // The menu appears a moment before it takes focus, and keys pressed in between go nowhere.
+    await expect(page.locator("[data-selection-move-items]")).toBeFocused();
     await page.keyboard.press("End");
     await page.keyboard.press("Enter");
     await expect(farm.section("lettuce").locator('[data-zone="zone-a"], [data-zone="zone-c"]')).toHaveCount(2);

@@ -1,19 +1,13 @@
 "use client";
 
 import {
-  ActionBar,
   Alert,
   Badge,
   Box,
   Button,
-  CloseButton,
   Dialog,
   Flex,
-  Grid,
-  Heading,
   HStack,
-  Icon,
-  IconButton,
   Menu,
   Portal,
   SimpleGrid,
@@ -33,14 +27,17 @@ import {
 } from "@terranova/shared";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState } from "react";
-import { LuBell, LuBellRing, LuDroplets, LuEllipsisVertical, LuPlus, LuSprout, LuWifi } from "react-icons/lu";
+import { LuBellRing, LuDroplets, LuPlus, LuSprout, LuWifi } from "react-icons/lu";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { AddCropDialog } from "./add-crop-dialog";
+import { AlarmBanners } from "./alarm-banners";
 import { AlarmTimesDialog } from "./alarm-times-dialog";
 import { AutomationDialog } from "./automation-dialog";
+import { CropSection } from "./crop-section";
 import { CropIcon } from "./crops";
 import { FieldLegend } from "./field-plot";
+import { SelectionBar } from "./selection-bar";
 import { SummaryTile } from "./summary-tile";
 import { toaster } from "./toaster";
 import { useFarm } from "./use-farm";
@@ -54,7 +51,6 @@ export function Dashboard() {
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const tCrops = useTranslations("crops");
   const [confirmWater, setConfirmWater] = useState<{ title: string; zoneIds: string[]; alarms?: boolean } | null>(null);
-  const [showAlarmList, setShowAlarmList] = useState(false);
   const [editingCrop, setEditingCrop] = useState<Crop | null>(null);
   const [editingRules, setEditingRules] = useState<Crop | null>(null);
   const [selecting, setSelecting] = useState(false);
@@ -249,79 +245,22 @@ export function Dashboard() {
         </Alert.Root>
       )}
 
-      {(alarms.length > 0 || pumping.length > 0) && (
-        <Stack gap="2" position="sticky" top="2" zIndex="sticky" maxH="50vh" overflowY="auto">
-          {alarms.length > 1 && (
-            <Alert.Root status="warning" alignItems="center" flexWrap="wrap" gap="3">
-              <Alert.Indicator />
-              <Alert.Title flex="1" minW="40" data-alarm-summary>
-                {t("alarm", { zone: alarms.map((alarm) => zoneLetter(alarm.zoneId)).join(", ") })}
-              </Alert.Title>
-              <Button size="lg" variant="ghost" onClick={() => setShowAlarmList((shown) => !shown)}>
-                {t(showAlarmList ? "hideAlarms" : "showAlarms")}
-              </Button>
-              {allowed && (
-                <Button
-                  size="lg"
-                  colorPalette="orange"
-                  data-confirm-all
-                  disabled={!connected}
-                  onClick={() =>
-                    setConfirmWater({
-                      title: t("confirmAllTitle", { count: alarms.length }),
-                      zoneIds: alarms.map((alarm) => alarm.zoneId),
-                      alarms: true,
-                    })
-                  }
-                >
-                  {t("confirmAll")}
-                </Button>
-              )}
-            </Alert.Root>
-          )}
-          {(alarms.length === 1 || showAlarmList) &&
-            alarms.map((alarm) => (
-              <Alert.Root key={alarm.id} status="warning" alignItems="center" flexWrap="wrap" gap="3">
-                <Alert.Indicator />
-                <Alert.Title flex="1" minW="40">
-                  {t("alarm", { zone: zoneLetter(alarm.zoneId) })}
-                  {alarm.reminderCount > 0 && ` · ${t("reminded", { count: alarm.reminderCount })}`}
-                </Alert.Title>
-                {allowed && (
-                  <Button
-                    size="lg"
-                    colorPalette="orange"
-                    disabled={!connected}
-                    loading={pending.has(alarm.id)}
-                    onClick={() => run(alarm.id, () => confirmAlarm(alarm.id))}
-                  >
-                    {t("confirm")}
-                  </Button>
-                )}
-              </Alert.Root>
-            ))}
-          {pumping.map((zoneId) => (
-            <Alert.Root key={zoneId} status="info" alignItems="center" flexWrap="wrap" gap="3">
-              <Alert.Indicator />
-              <Alert.Title flex="1" minW="40">
-                {t("pumping", { zone: zoneLetter(zoneId) })}
-              </Alert.Title>
-              {allowed && (
-                <Button
-                  size="lg"
-                  colorPalette="red"
-                  data-stop={zoneId}
-                  disabled={!connected}
-                  loading={pending.has(`stop:${zoneId}`)}
-                  onClick={() => run(`stop:${zoneId}`, () => stopPump(zoneId))}
-                >
-                  {t("stop")}
-                </Button>
-              )}
-            </Alert.Root>
-          ))}
-        </Stack>
-      )}
+      <AlarmBanners
+        alarms={alarms}
+        pumping={pumping}
+        allowed={allowed}
+        connected={connected}
+        pending={pending}
+        onConfirm={(cycleId) => run(cycleId, () => confirmAlarm(cycleId))}
+        onConfirmAll={() =>
+          setConfirmWater({
+            title: t("confirmAllTitle", { count: alarms.length }),
+            zoneIds: alarms.map((alarm) => alarm.zoneId),
+            alarms: true,
+          })
+        }
+        onStop={(zoneId) => run(`stop:${zoneId}`, () => stopPump(zoneId))}
+      />
 
       <SimpleGrid columns={{ base: 2, md: 4 }} gap="2">
         <SummaryTile
@@ -360,170 +299,59 @@ export function Dashboard() {
         </Flex>
       )}
 
-      {crops.map((crop) => {
+      {crops.map((crop, index) => {
         const members = zonesIn(crop.id);
-        const isDropTarget = dropTarget === crop.id && !!pointer;
         return (
-          <Stack
-            as="section"
+          <CropSection
             key={crop.id}
-            data-section={crop.id}
-            data-drop-target={isDropTarget || undefined}
-            aria-label={cropName(crop)}
-            gap="3"
-            p="3"
-            // The drop outline sits outside the content, which stays aligned with the rest of the page.
-            mx="calc(var(--chakra-spacing-3) * -1 - 2px)"
-            borderRadius="lg"
-            borderWidth="2px"
-            borderStyle="dashed"
-            borderColor={isDropTarget ? "copper" : pointer ? "brand.emphasized" : "transparent"}
-            bg={isDropTarget ? "brand.subtle" : undefined}
+            crop={crop}
+            name={cropName(crop)}
+            zoneCount={members.length}
+            isFirst={index === 0}
+            isLast={index === crops.length - 1}
+            dragging={!!pointer}
+            isDropTarget={dropTarget === crop.id && !!pointer}
+            allowed={allowed}
+            connected={connected}
+            controlItems={bulkControlItems(members)}
+            onEdit={() => setEditingCrop(crop)}
+            onEditRules={() => setEditingRules(crop)}
+            onEditTimes={() => setEditingTimes({ id: crop.id, name: cropName(crop), times: crop.alarmTimes })}
+            onMove={(step) => moveSection(crop, step)}
+            onRemove={() => handleRemoveCrop(crop)}
+            onWater={() => askToWater(members, t("sectionWaterTitle", { section: cropName(crop) }))}
+            onApply={(value) => applyBulk(members, value)}
           >
-            <Flex align="center" justify="space-between" gap="2" wrap="wrap">
-              <HStack gap="2">
-                <CropIcon icon={crop.icon} boxSize="8" data-section-icon={crop.icon} />
-                <Heading as="h2" fontSize="2xl" fontWeight="800" letterSpacing="-0.02em">
-                  {cropName(crop)}
-                </Heading>
-                <Badge variant="subtle">{t("sectionCount", { count: members.length })}</Badge>
-                {allowed && (
-                  <Menu.Root
-                    lazyMount
-                    unmountOnExit
-                    onSelect={({ value }) => {
-                      if (value === "edit") setEditingCrop(crop);
-                      else if (value === "automation") setEditingRules(crop);
-                      else moveSection(crop, value === "up" ? -1 : 1);
-                    }}
-                  >
-                    <Menu.Trigger asChild>
-                      <IconButton
-                        variant="ghost"
-                        size="sm"
-                        data-section-more={crop.id}
-                        aria-label={t("sectionMore", { section: cropName(crop) })}
-                        disabled={!connected}
-                      >
-                        <LuEllipsisVertical />
-                      </IconButton>
-                    </Menu.Trigger>
-                    <Portal>
-                      <Menu.Positioner>
-                        <Menu.Content data-section-more-items={crop.id}>
-                          <Menu.Item value="edit">{t("editCrop")}</Menu.Item>
-                          <Menu.Item value="automation">{t("automation")}</Menu.Item>
-                          <Menu.Item value="up" disabled={crops[0]?.id === crop.id}>
-                            {t("moveUp")}
-                          </Menu.Item>
-                          <Menu.Item value="down" disabled={crops.at(-1)?.id === crop.id}>
-                            {t("moveDown")}
-                          </Menu.Item>
-                        </Menu.Content>
-                      </Menu.Positioner>
-                    </Portal>
-                  </Menu.Root>
-                )}
-              </HStack>
-              {allowed && members.length > 0 && (
-                <HStack gap="2">
-                  <Button
-                    data-section-water={crop.id}
-                    disabled={!connected}
-                    onClick={() => askToWater(members, t("sectionWaterTitle", { section: cropName(crop) }))}
-                  >
-                    {t("sectionWater")}
-                  </Button>
-                  <Menu.Root lazyMount unmountOnExit onSelect={({ value }) => applyBulk(members, value)}>
-                    <Menu.Trigger asChild>
-                      <Button variant="outline" data-section-menu={crop.id} disabled={!connected}>
-                        {t("sectionControl")}
-                      </Button>
-                    </Menu.Trigger>
-                    <Portal>
-                      <Menu.Positioner>
-                        <Menu.Content data-section-items={crop.id}>{bulkControlItems(members)}</Menu.Content>
-                      </Menu.Positioner>
-                    </Portal>
-                  </Menu.Root>
-                </HStack>
-              )}
-              {allowed && members.length === 0 && (
-                <Button variant="ghost" size="sm" data-section-remove={crop.id} onClick={() => handleRemoveCrop(crop)}>
-                  {t("sectionRemove")}
-                </Button>
-              )}
-            </Flex>
-            <HStack gap="2" textStyle="sm" color="fg.muted">
-              <Icon as={LuBell} aria-hidden />
-              <Text data-section-times={crop.id}>
-                {crop.alarmTimes.length > 0 ? crop.alarmTimes.join(", ") : t("noAlarmTimes")}
-              </Text>
-              {Object.values(crop.automation).some((rule) => rule !== null) && (
-                <Badge data-section-auto={crop.id}>{t("automationOn")}</Badge>
-              )}
-              {allowed && (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  data-section-times-edit={crop.id}
-                  aria-label={t("editAlarmTimes", { section: cropName(crop) })}
-                  disabled={!connected}
-                  onClick={() => setEditingTimes({ id: crop.id, name: cropName(crop), times: crop.alarmTimes })}
-                >
-                  {t("change")}
-                </Button>
-              )}
-            </HStack>
-            {members.length === 0 ? (
-              <Text textStyle="sm" color="fg.muted">
-                {t("sectionEmpty")}
-              </Text>
-            ) : (
-              <Grid
-                as="ul"
-                listStyleType="none"
-                templateColumns={{
-                  base: "1fr",
-                  md: "repeat(auto-fill, minmax(340px, 1fr))",
-                  xl: "repeat(auto-fill, minmax(480px, 1fr))",
-                }}
-                gap="2"
-              >
-                {members.map((zoneId) => (
-                  <li key={zoneId}>
-                    <ZoneCard
-                      zoneId={zoneId}
-                      crop={crop}
-                      selected={selected.has(zoneId)}
-                      selecting={selecting}
-                      pauses={automationPauses}
-                      timeZone={timeZone}
-                      onToggleSelect={() => toggle(zoneId)}
-                      dragging={!!pointer && selected.has(zoneId)}
-                      group={selected.has(zoneId) && selectedIds.length > 1 ? selectedIds : null}
-                      bulkItems={bulkControlItems}
-                      moveItems={moveItems}
-                      zone={zones[zoneId]}
-                      cycle={cycles[zoneId]}
-                      disconnected={connection === "disconnected"}
-                      allowed={allowed}
-                      pending={pending}
-                      onResume={(actuator) =>
-                        run(`resume:${zoneId}:${actuator}`, () => resumeAutomation(zoneId, actuator))
-                      }
-                      onWater={() => run(`water:${zoneId}`, () => startWatering(zoneId))}
-                      onWaterGroup={(ids) => askToWater(ids, t("selectionWaterTitle", { count: ids.length }))}
-                      onBulk={applyBulk}
-                      onStop={() => run(`stop:${zoneId}`, () => stopPump(zoneId))}
-                      onMove={(target) => run(`move:${zoneId}`, () => moveZones([zoneId], target))}
-                      onSwitch={(actuator, on) => run(`${zoneId}:${actuator}`, () => setActuator(zoneId, actuator, on))}
-                    />
-                  </li>
-                ))}
-              </Grid>
-            )}
-          </Stack>
+            {members.map((zoneId) => (
+              <li key={zoneId}>
+                <ZoneCard
+                  zoneId={zoneId}
+                  crop={crop}
+                  selected={selected.has(zoneId)}
+                  selecting={selecting}
+                  pauses={automationPauses}
+                  timeZone={timeZone}
+                  onToggleSelect={() => toggle(zoneId)}
+                  dragging={!!pointer && selected.has(zoneId)}
+                  group={selected.has(zoneId) && selectedIds.length > 1 ? selectedIds : null}
+                  bulkItems={bulkControlItems}
+                  moveItems={moveItems}
+                  zone={zones[zoneId]}
+                  cycle={cycles[zoneId]}
+                  disconnected={connection === "disconnected"}
+                  allowed={allowed}
+                  pending={pending}
+                  onResume={(actuator) => run(`resume:${zoneId}:${actuator}`, () => resumeAutomation(zoneId, actuator))}
+                  onWater={() => run(`water:${zoneId}`, () => startWatering(zoneId))}
+                  onWaterGroup={(ids) => askToWater(ids, t("selectionWaterTitle", { count: ids.length }))}
+                  onBulk={applyBulk}
+                  onStop={() => run(`stop:${zoneId}`, () => stopPump(zoneId))}
+                  onMove={(target) => run(`move:${zoneId}`, () => moveZones([zoneId], target))}
+                  onSwitch={(actuator, on) => run(`${zoneId}:${actuator}`, () => setActuator(zoneId, actuator, on))}
+                />
+              </li>
+            ))}
+          </CropSection>
         );
       })}
 
@@ -613,59 +441,15 @@ export function Dashboard() {
         </Badge>
       )}
 
-      <ActionBar.Root
-        open={allowed && selectedIds.length > 0}
-        onOpenChange={(event) => {
-          if (!event.open) clear();
-        }}
-        closeOnInteractOutside={false}
-      >
-        <Portal>
-          <ActionBar.Positioner>
-            <ActionBar.Content data-selection-bar flexWrap="wrap">
-              <ActionBar.SelectionTrigger data-selection-count>
-                {t("selectionCount", { count: selectedIds.length })}
-              </ActionBar.SelectionTrigger>
-              <ActionBar.Separator />
-              <Button
-                size="sm"
-                data-selection-water
-                disabled={!connected}
-                onClick={() => askToWater(selectedIds, t("selectionWaterTitle", { count: selectedIds.length }))}
-              >
-                {t("menu.water")}
-              </Button>
-              <Menu.Root lazyMount unmountOnExit onSelect={({ value }) => applyBulk(selectedIds, value)}>
-                <Menu.Trigger asChild>
-                  <Button size="sm" variant="outline" data-selection-control disabled={!connected}>
-                    {t("sectionControl")}
-                  </Button>
-                </Menu.Trigger>
-                <Portal>
-                  <Menu.Positioner>
-                    <Menu.Content data-selection-control-items>{bulkControlItems(selectedIds)}</Menu.Content>
-                  </Menu.Positioner>
-                </Portal>
-              </Menu.Root>
-              <Menu.Root lazyMount unmountOnExit onSelect={({ value }) => applyBulk(selectedIds, value)}>
-                <Menu.Trigger asChild>
-                  <Button size="sm" variant="outline" data-selection-move disabled={!connected}>
-                    {t("menu.moveLabel")}
-                  </Button>
-                </Menu.Trigger>
-                <Portal>
-                  <Menu.Positioner>
-                    <Menu.Content data-selection-move-items>{moveItems()}</Menu.Content>
-                  </Menu.Positioner>
-                </Portal>
-              </Menu.Root>
-              <ActionBar.CloseTrigger asChild>
-                <CloseButton size="sm" aria-label={t("selectionClear")} />
-              </ActionBar.CloseTrigger>
-            </ActionBar.Content>
-          </ActionBar.Positioner>
-        </Portal>
-      </ActionBar.Root>
+      <SelectionBar
+        count={allowed ? selectedIds.length : 0}
+        connected={connected}
+        controlItems={bulkControlItems(selectedIds)}
+        moveItems={moveItems()}
+        onClear={clear}
+        onWater={() => askToWater(selectedIds, t("selectionWaterTitle", { count: selectedIds.length }))}
+        onApply={(value) => applyBulk(selectedIds, value)}
+      />
 
       <FieldLegend />
     </Stack>
