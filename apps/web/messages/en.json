@@ -341,5 +341,13 @@
     "failed": "Couldn't save. Please try again.",
     "cancel": "Cancel",
     "save": "Save"
+  },
+  "errors": {
+    "errorTitle": "Something went wrong",
+    "errorDescription": "This screen could not be loaded. Please try again.",
+    "retry": "Try again",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "The address may have changed, or this page does not exist.",
+    "home": "Go to the dashboard"
   }
 }
