@@ -1,6 +1,5 @@
-import { Container } from "@chakra-ui/react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { HistoryList } from "@/components/history-list";
 
 export default async function HistoryPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -9,9 +8,8 @@ export default async function HistoryPage({ params }: { params: Promise<{ locale
   const t = await getTranslations("history");
 
   return (
-    <Container maxW="5xl" px={{ base: "4", md: "6" }} py={{ base: "4", md: "8" }}>
-      <AppHeader title={t("title")} />
+    <AppShell title={t("title")}>
       <HistoryList />
-    </Container>
+    </AppShell>
   );
 }

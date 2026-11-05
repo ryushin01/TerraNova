@@ -127,7 +127,13 @@
     "selectZone": "{zone} 구역 선택",
     "automation": "자동 제어",
     "automationOn": "자동 제어",
-    "automationPaused": "{time}까지 직접 설정 유지 (자동 제어 중지)"
+    "automationPaused": "{time}까지 직접 설정 유지 (자동 제어 중지)",
+    "summary": {
+      "online": "온라인 구역",
+      "watering": "급수 중",
+      "alarms": "대기 알람",
+      "soil": "평균 토양 수분"
+    }
   },
   "nav": {
     "users": "사용자 관리",
@@ -142,7 +148,10 @@
     "notificationsDisabled": "알림을 껐어요.",
     "notificationsDenied": "브라우저 설정에서 알림을 허용해 주세요.",
     "notificationsUnavailable": "이 환경에서는 알림을 켤 수 없어요. 브라우저가 신뢰하는 인증서가 필요해요.",
-    "sensors": "센서 이력"
+    "sensors": "센서 이력",
+    "navigation": "주요 메뉴",
+    "openNavigation": "메뉴 열기",
+    "closeNavigation": "메뉴 닫기"
   },
   "roles": {
     "admin": "관리자",
@@ -161,7 +170,9 @@
     "createAdmin": "관리자 만들기",
     "loginFailed": "이메일 또는 비밀번호가 맞지 않아요.",
     "setupFailed": "계정을 만들지 못했어요. 입력 내용을 확인해 주세요.",
-    "requestFailed": "서버에 연결하지 못했어요. 다시 시도해 주세요."
+    "requestFailed": "서버에 연결하지 못했어요. 다시 시도해 주세요.",
+    "heroTitle": "밭의 상태를 한눈에 보고, 물은 사람이 정해요",
+    "heroBody": "실시간 센서와 알람, 구역별 제어를 한 화면에서 다룹니다."
   },
   "users": {
     "title": "사용자 관리",

@@ -12,8 +12,7 @@ test.describe("sensor history", () => {
     const farm = new Farm(page);
     await farm.open();
     await page.waitForTimeout(3000);
-    const menu = await farm.openAccountMenu();
-    await menu.getByRole("menuitem", { name: "센서 이력" }).click();
+    await farm.goTo("센서 이력");
     await expect(page).toHaveURL(/\/ko\/sensors$/);
 
     for (const measure of ["temperatureC", "humidityPct", "soilMoisturePct"]) {

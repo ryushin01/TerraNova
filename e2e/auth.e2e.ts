@@ -74,8 +74,7 @@ test.describe("accounts", () => {
   test("an admin adds and removes users", async ({ page, context }) => {
     await signIn(context);
     await page.goto("/ko");
-    const menu = await new Farm(page).openAccountMenu();
-    await menu.getByRole("menuitem", { name: "사용자 관리" }).click();
+    await new Farm(page).goTo("사용자 관리");
     await expect(page).toHaveURL(/\/ko\/users$/);
     const row = (email: string) => page.locator(`[data-user="${email}"]`);
     await expect(row(ADMIN.email)).toBeVisible();
@@ -122,8 +121,7 @@ test.describe("accounts", () => {
     await farm.field("zone-a").click({ button: "right" });
     await expect(viewerPage.locator("[data-zone-menu]")).toHaveCount(0);
 
-    const menu = await farm.openAccountMenu();
-    await expect(menu.getByRole("menuitem", { name: "사용자 관리" })).toHaveCount(0);
+    await expect(farm.navLink("사용자 관리")).toHaveCount(0);
     await viewerPage.goto("/ko/users");
     await expect(viewerPage.getByText("관리자만")).toBeVisible();
     await viewerContext.close();

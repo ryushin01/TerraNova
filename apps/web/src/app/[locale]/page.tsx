@@ -1,6 +1,5 @@
-import { Container } from "@chakra-ui/react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { AppHeader } from "@/components/app-header";
+import { AppShell } from "@/components/app-shell";
 import { Dashboard } from "@/components/dashboard";
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -9,9 +8,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   const t = await getTranslations("dashboard");
 
   return (
-    <Container maxW="4xl" px={{ base: "4", md: "6" }} py={{ base: "4", md: "8" }}>
-      <AppHeader title={t("title")} />
+    <AppShell title={t("title")}>
       <Dashboard />
-    </Container>
+    </AppShell>
   );
 }

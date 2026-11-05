@@ -12,6 +12,7 @@ import {
   DataList,
   Dialog,
   Flex,
+  Grid,
   Heading,
   HStack,
   Icon,
@@ -43,14 +44,29 @@ import {
 } from "@terranova/shared";
 import { useFormatter, useTranslations } from "next-intl";
 import { type ReactNode, useState } from "react";
-import { LuBell, LuPlus } from "react-icons/lu";
+import type { IconType } from "react-icons";
+import {
+  LuBell,
+  LuBellRing,
+  LuDroplets,
+  LuEllipsisVertical,
+  LuLightbulb,
+  LuListChecks,
+  LuPlus,
+  LuSprout,
+  LuThermometer,
+  LuWaves,
+  LuWifi,
+  LuWind,
+} from "react-icons/lu";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { AddCropDialog } from "./add-crop-dialog";
 import { AlarmTimesDialog } from "./alarm-times-dialog";
 import { AutomationDialog } from "./automation-dialog";
-import { CROP_ICONS } from "./crops";
+import { CropIcon } from "./crops";
 import { FieldLegend, FieldPlot, fieldLook } from "./field-plot";
+import { chamfer } from "./theme";
 import { toaster } from "./toaster";
 import { useFarm } from "./use-farm";
 import { useFieldSelection } from "./use-field-selection";
@@ -68,8 +84,48 @@ const STATE_COLORS: Record<WateringState, string> = {
 
 const zoneLetter = (zoneId: string) => zoneId.replace("zone-", "").toUpperCase();
 
+function SummaryTile({
+  icon,
+  label,
+  value,
+  dark = false,
+}: {
+  icon: IconType;
+  label: string;
+  value: string;
+  dark?: boolean;
+}) {
+  return (
+    <Box
+      bg={dark ? "ink" : "white"}
+      color={dark ? "white" : "ink"}
+      p={{ base: "4", md: "5" }}
+      style={{ clipPath: chamfer() }}
+    >
+      <HStack gap="2" color={dark ? "whiteAlpha.800" : "fg.muted"}>
+        <Icon as={icon} color={dark ? "white" : "copper"} aria-hidden />
+        <Text textStyle="sm" fontWeight="bold" truncate>
+          {label}
+        </Text>
+      </HStack>
+      <Text
+        mt={{ base: "4", md: "6" }}
+        fontSize={{ base: "2xl", md: "4xl" }}
+        fontWeight="800"
+        lineHeight="1"
+        letterSpacing="-0.02em"
+        fontVariantNumeric="tabular-nums"
+        data-summary={label}
+      >
+        {value}
+      </Text>
+    </Box>
+  );
+}
+
 export function Dashboard() {
   const t = useTranslations("dashboard");
+  const format = useFormatter();
   const router = useRouter();
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const tCrops = useTranslations("crops");
@@ -128,6 +184,14 @@ export function Dashboard() {
     const state = cycles[id]?.state;
     return zones[id]?.telemetry?.actuators.pump || state === "command_sent" || state === "watering";
   });
+
+  const soilValues = ZONE_IDS.flatMap((id) => {
+    const soil = zones[id]?.online ? zones[id]?.telemetry?.soilMoisturePct : undefined;
+    return soil === undefined ? [] : [soil];
+  });
+  const averageSoil = soilValues.length
+    ? `${format.number(soilValues.reduce((total, soil) => total + soil, 0) / soilValues.length, { maximumFractionDigits: 0 })}%`
+    : "–";
 
   /** Runs one control at a time per key, so a double tap can't send it twice. */
   const run = async (key: string, action: () => Promise<ConfirmResult | ControlResult>) => {
@@ -223,7 +287,7 @@ export function Dashboard() {
       .filter((crop) => crop.id !== exclude)
       .map((crop) => (
         <Menu.Item key={crop.id} value={`move:${crop.id}`}>
-          <Icon as={CROP_ICONS[crop.icon]} aria-hidden />
+          <CropIcon icon={crop.icon} boxSize="5" />
           {t("menu.moveTo", { section: cropName(crop) })}
         </Menu.Item>
       ));
@@ -334,6 +398,18 @@ export function Dashboard() {
         </Stack>
       )}
 
+      <SimpleGrid columns={{ base: 2, md: 4 }} gap="2">
+        <SummaryTile
+          dark
+          icon={LuWifi}
+          label={t("summary.online")}
+          value={`${ZONE_IDS.filter((id) => zones[id]?.online).length} / ${ZONE_IDS.length}`}
+        />
+        <SummaryTile icon={LuDroplets} label={t("summary.watering")} value={String(pumping.length)} />
+        <SummaryTile icon={LuBellRing} label={t("summary.alarms")} value={String(alarms.length)} />
+        <SummaryTile icon={LuSprout} label={t("summary.soil")} value={averageSoil} />
+      </SimpleGrid>
+
       {allowed && (
         <Flex justify="space-between" align="center" gap="3" wrap="wrap">
           <Text textStyle="sm" color="fg.muted" hideBelow="md">
@@ -371,17 +447,18 @@ export function Dashboard() {
             aria-label={cropName(crop)}
             gap="3"
             p="3"
-            mx="-3"
+            // The drop outline sits outside the content, which stays aligned with the rest of the page.
+            mx="calc(var(--chakra-spacing-3) * -1 - 2px)"
             borderRadius="lg"
             borderWidth="2px"
             borderStyle="dashed"
-            borderColor={isDropTarget ? "blue.solid" : pointer ? "border" : "transparent"}
-            bg={isDropTarget ? "blue.subtle" : undefined}
+            borderColor={isDropTarget ? "copper" : pointer ? "brand.emphasized" : "transparent"}
+            bg={isDropTarget ? "brand.subtle" : undefined}
           >
             <Flex align="center" justify="space-between" gap="2" wrap="wrap">
               <HStack gap="2">
-                <Icon as={CROP_ICONS[crop.icon]} boxSize="6" data-section-icon={crop.icon} aria-hidden />
-                <Heading as="h2" size="lg">
+                <CropIcon icon={crop.icon} boxSize="8" data-section-icon={crop.icon} />
+                <Heading as="h2" fontSize="2xl" fontWeight="800" letterSpacing="-0.02em">
                   {cropName(crop)}
                 </Heading>
                 <Badge variant="subtle">{t("sectionCount", { count: members.length })}</Badge>
@@ -403,7 +480,7 @@ export function Dashboard() {
                         aria-label={t("sectionMore", { section: cropName(crop) })}
                         disabled={!connected}
                       >
-                        ⋮
+                        <LuEllipsisVertical />
                       </IconButton>
                     </Menu.Trigger>
                     <Portal>
@@ -426,7 +503,6 @@ export function Dashboard() {
               {allowed && members.length > 0 && (
                 <HStack gap="2">
                   <Button
-                    colorPalette="blue"
                     data-section-water={crop.id}
                     disabled={!connected}
                     onClick={() => askToWater(members, t("sectionWaterTitle", { section: cropName(crop) }))}
@@ -459,9 +535,7 @@ export function Dashboard() {
                 {crop.alarmTimes.length > 0 ? crop.alarmTimes.join(", ") : t("noAlarmTimes")}
               </Text>
               {Object.values(crop.automation).some((rule) => rule !== null) && (
-                <Badge colorPalette="blue" data-section-auto={crop.id}>
-                  {t("automationOn")}
-                </Badge>
+                <Badge data-section-auto={crop.id}>{t("automationOn")}</Badge>
               )}
               {allowed && (
                 <Button
@@ -481,7 +555,16 @@ export function Dashboard() {
                 {t("sectionEmpty")}
               </Text>
             ) : (
-              <SimpleGrid as="ul" listStyleType="none" columns={{ base: 1, md: 2 }} gap="4">
+              <Grid
+                as="ul"
+                listStyleType="none"
+                templateColumns={{
+                  base: "1fr",
+                  md: "repeat(auto-fill, minmax(340px, 1fr))",
+                  xl: "repeat(auto-fill, minmax(480px, 1fr))",
+                }}
+                gap="2"
+              >
                 {members.map((zoneId) => (
                   <li key={zoneId}>
                     <ZoneCard
@@ -510,7 +593,7 @@ export function Dashboard() {
                     />
                   </li>
                 ))}
-              </SimpleGrid>
+              </Grid>
             )}
           </Stack>
         );
@@ -538,7 +621,6 @@ export function Dashboard() {
                   <Button variant="outline">{t("cancel")}</Button>
                 </Dialog.ActionTrigger>
                 <Button
-                  colorPalette="blue"
                   data-water-confirm
                   onClick={() => {
                     if (confirmWater?.alarms) confirmAlarms(confirmWater.zoneIds);
@@ -584,8 +666,8 @@ export function Dashboard() {
           zIndex="overlay"
           pointerEvents="none"
           borderWidth="1px"
-          borderColor="blue.solid"
-          bg="blue.solid/15"
+          borderColor="copper"
+          bg="copper/15"
           style={marquee}
         />
       )}
@@ -597,7 +679,6 @@ export function Dashboard() {
           pointerEvents="none"
           size="lg"
           variant="solid"
-          colorPalette="blue"
           style={{ left: pointer.x + 12, top: pointer.y + 12 }}
         >
           {t("dragLabel", { count: selectedIds.length })}
@@ -620,7 +701,6 @@ export function Dashboard() {
               <ActionBar.Separator />
               <Button
                 size="sm"
-                colorPalette="blue"
                 data-selection-water
                 disabled={!connected}
                 onClick={() => askToWater(selectedIds, t("selectionWaterTitle", { count: selectedIds.length }))}
@@ -808,6 +888,11 @@ function ZoneCard({
 
   return (
     <Card.Root
+      variant="elevated"
+      boxShadow={selected ? "inset 0 0 0 2px var(--chakra-colors-copper)" : "none"}
+      border="none"
+      borderRadius="0"
+      style={{ clipPath: chamfer() }}
       data-zone={zoneId}
       data-state={cycle?.state ?? "idle"}
       data-selected={selected || undefined}
@@ -815,9 +900,6 @@ function ZoneCard({
       userSelect="none"
       cursor={selected ? "grab" : undefined}
       opacity={dragging ? 0.5 : 1}
-      outline={selected ? "3px solid" : undefined}
-      outlineColor={selected ? "blue.solid" : undefined}
-      outlineOffset="1px"
     >
       <Card.Body gap="3" p="4">
         <Flex justify="space-between" align="center" gap="2">
@@ -834,9 +916,14 @@ function ZoneCard({
                 <Checkbox.Control />
               </Checkbox.Root>
             )}
-            <Card.Title>{t("zone", { id: zoneName })}</Card.Title>
+            <Card.Title fontWeight="800" fontSize="lg" letterSpacing="-0.01em">
+              {t("zone", { id: zoneName })}
+            </Card.Title>
+            <Badge colorPalette={palette} variant={palette === "gray" ? "subtle" : "solid"}>
+              {stateLabel}
+            </Badge>
           </HStack>
-          <HStack gap="2">
+          <HStack gap="1">
             {(online || showOffline) && (
               <Status.Root colorPalette={online ? "green" : "gray"} size="sm">
                 <Status.Indicator />
@@ -848,11 +935,12 @@ function ZoneCard({
                 <Menu.Trigger asChild>
                   <IconButton
                     variant="ghost"
+                    colorPalette="gray"
                     size="md"
                     aria-label={t("menu.open", { zone: zoneName })}
                     data-menu-button={zoneId}
                   >
-                    ⋮
+                    <LuEllipsisVertical />
                   </IconButton>
                 </Menu.Trigger>
                 {menuContent}
@@ -861,77 +949,99 @@ function ZoneCard({
           </HStack>
         </Flex>
 
-        {allowed ? (
-          <Menu.Root lazyMount unmountOnExit onSelect={({ value }) => handleMenu(value)}>
-            <Menu.ContextTrigger asChild>
-              <Box data-plot-menu={zoneId} w="full" display="block" cursor="context-menu" userSelect="none">
-                {plot}
-              </Box>
-            </Menu.ContextTrigger>
-            {menuContent}
-          </Menu.Root>
-        ) : (
-          plot
-        )}
+        <Grid templateColumns={{ base: "1fr", xl: "minmax(0, 1.15fr) minmax(0, 1fr)" }} gap="4">
+          <Stack gap="2">
+            {allowed ? (
+              <Menu.Root lazyMount unmountOnExit onSelect={({ value }) => handleMenu(value)}>
+                <Menu.ContextTrigger asChild>
+                  <Box data-plot-menu={zoneId} w="full" display="block" cursor="context-menu" userSelect="none">
+                    {plot}
+                  </Box>
+                </Menu.ContextTrigger>
+                {menuContent}
+              </Menu.Root>
+            ) : (
+              plot
+            )}
+            {showReason && <Text textStyle="xs">{t(reasonKey as never)}</Text>}
+          </Stack>
 
-        <Stack gap="1" align="flex-start">
-          <Badge colorPalette={palette} variant="solid">
-            {stateLabel}
-          </Badge>
-          {showReason && <Text textStyle="xs">{t(reasonKey as never)}</Text>}
-        </Stack>
+          <Stack gap="3">
+            <Progress.Root
+              value={soil ?? null}
+              min={0}
+              max={100}
+              size="sm"
+              colorPalette="teal"
+              opacity={online ? 1 : 0.5}
+            >
+              <Flex justify="space-between" mb="1">
+                <Progress.Label textStyle="sm" fontWeight="normal" color="fg.muted">
+                  <HStack gap="1.5">
+                    <Icon as={LuWaves} aria-hidden />
+                    {t("soil")}
+                  </HStack>
+                </Progress.Label>
+                <Text textStyle="sm" fontWeight="semibold" fontVariantNumeric="tabular-nums">
+                  {value(soil, "%")}
+                </Text>
+              </Flex>
+              <Progress.Track borderRadius="full">
+                <Progress.Range />
+              </Progress.Track>
+            </Progress.Root>
 
-        <Progress.Root value={soil ?? null} min={0} max={100} size="sm" colorPalette="teal" opacity={online ? 1 : 0.5}>
-          <Flex justify="space-between" mb="1">
-            <Progress.Label textStyle="sm" fontWeight="normal" color="fg.muted">
-              {t("soil")}
-            </Progress.Label>
-            <Text textStyle="sm" fontVariantNumeric="tabular-nums">
-              {value(soil, "%")}
-            </Text>
-          </Flex>
-          <Progress.Track>
-            <Progress.Range />
-          </Progress.Track>
-        </Progress.Root>
+            <DataList.Root orientation="horizontal" size="sm" gap="1" opacity={online ? 1 : 0.5}>
+              <Reading icon={LuThermometer} label={t("temperature")} value={value(telemetry?.temperatureC, "°C")} />
+              <Reading icon={LuDroplets} label={t("humidity")} value={value(telemetry?.humidityPct, "%")} />
+              <Reading
+                icon={LuListChecks}
+                label={t("pump")}
+                value={telemetry ? t(telemetry.actuators.pump ? "on" : "off") : "–"}
+              />
+            </DataList.Root>
 
-        <DataList.Root orientation="horizontal" size="sm" gap="1" opacity={online ? 1 : 0.5}>
-          <Reading label={t("temperature")} value={value(telemetry?.temperatureC, "°C")} />
-          <Reading label={t("humidity")} value={value(telemetry?.humidityPct, "%")} />
-          <Reading label={t("pump")} value={telemetry ? t(telemetry.actuators.pump ? "on" : "off") : "–"} />
-        </DataList.Root>
-
-        <Stack gap="0">
-          {MANUAL_ACTUATORS.map((actuator) => {
-            const until = pausedUntil(actuator);
-            return (
-              <Box key={actuator}>
-                <Switch.Root
-                  data-actuator={actuator}
-                  size="md"
-                  minH="11"
-                  w="full"
-                  justifyContent="space-between"
-                  // Shows what the device reports, so the switch can't claim a change that didn't happen.
-                  checked={!!telemetry?.actuators[actuator]}
-                  disabled={!allowed || !online || pending.has(`${zoneId}:${actuator}`)}
-                  onCheckedChange={(event) => onSwitch(actuator, event.checked)}
-                >
-                  <Switch.HiddenInput />
-                  <Switch.Label fontWeight="normal">{t(actuator)}</Switch.Label>
-                  <Switch.Control />
-                </Switch.Root>
-                {until && (
-                  <Text textStyle="xs" color="fg.muted" mb="1" data-automation-paused={actuator}>
-                    {t("automationPaused", {
-                      time: format.dateTime(new Date(until), { timeStyle: "short", timeZone: timeZone || undefined }),
-                    })}
-                  </Text>
-                )}
-              </Box>
-            );
-          })}
-        </Stack>
+            <Stack gap="0">
+              {MANUAL_ACTUATORS.map((actuator) => {
+                const until = pausedUntil(actuator);
+                return (
+                  <Box key={actuator}>
+                    <Switch.Root
+                      data-actuator={actuator}
+                      size="md"
+                      minH="10"
+                      w="full"
+                      justifyContent="space-between"
+                      // Shows what the device reports, so the switch can't claim a change that didn't happen.
+                      checked={!!telemetry?.actuators[actuator]}
+                      disabled={!allowed || !online || pending.has(`${zoneId}:${actuator}`)}
+                      onCheckedChange={(event) => onSwitch(actuator, event.checked)}
+                    >
+                      <Switch.HiddenInput />
+                      <Switch.Label fontWeight="normal">
+                        <HStack gap="1.5">
+                          <Icon as={actuator === "vent" ? LuWind : LuLightbulb} color="fg.muted" aria-hidden />
+                          {t(actuator)}
+                        </HStack>
+                      </Switch.Label>
+                      <Switch.Control />
+                    </Switch.Root>
+                    {until && (
+                      <Text textStyle="xs" color="fg.muted" mb="1" data-automation-paused={actuator}>
+                        {t("automationPaused", {
+                          time: format.dateTime(new Date(until), {
+                            timeStyle: "short",
+                            timeZone: timeZone || undefined,
+                          }),
+                        })}
+                      </Text>
+                    )}
+                  </Box>
+                );
+              })}
+            </Stack>
+          </Stack>
+        </Grid>
 
         {showOffline && zone?.lastSeenAt && (
           <Text textStyle="xs" color="fg.muted">
@@ -945,10 +1055,15 @@ function ZoneCard({
   );
 }
 
-function Reading({ label, value }: { label: string; value: string }) {
+function Reading({ icon, label, value }: { icon: IconType; label: string; value: string }) {
   return (
     <DataList.Item justifyContent="space-between">
-      <DataList.ItemLabel>{label}</DataList.ItemLabel>
+      <DataList.ItemLabel>
+        <HStack gap="1.5">
+          <Icon as={icon} aria-hidden />
+          {label}
+        </HStack>
+      </DataList.ItemLabel>
       <DataList.ItemValue flex="none" fontVariantNumeric="tabular-nums">
         {value}
       </DataList.ItemValue>

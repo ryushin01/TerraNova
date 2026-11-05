@@ -17,14 +17,16 @@ import { SENSOR_RANGES, type SensorRange, type SensorSeries, ZONE_IDS } from "@t
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { chamfer } from "./theme";
 
 const RANGES = Object.keys(SENSOR_RANGES) as SensorRange[];
 const REFRESH_MS = 30_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const LINE_COLOR = "var(--chakra-colors-blue-600)";
-const GRID_COLOR = "var(--chakra-colors-gray-200)";
-const AXIS_COLOR = "var(--chakra-colors-gray-500)";
+// A more saturated copper than the accent, which reads as gray at the width of a line.
+const LINE_COLOR = "#b85a1f";
+const GRID_COLOR = "#ece6e4";
+const AXIS_COLOR = "#8a8381";
 
 type Measure = "temperatureC" | "humidityPct" | "soilMoisturePct";
 
@@ -93,11 +95,24 @@ function SensorChart({
   });
 
   return (
-    <Card.Root data-sensor-chart={key}>
+    <Card.Root
+      data-sensor-chart={key}
+      variant="elevated"
+      boxShadow="none"
+      border="none"
+      borderRadius="0"
+      style={{ clipPath: chamfer() }}
+    >
       <Card.Body gap="2" p="4">
         <Flex justify="space-between" align="baseline" gap="2">
-          <Card.Title textStyle="md">{t(key)}</Card.Title>
-          <Text fontWeight="medium" fontVariantNumeric="tabular-nums" data-sensor-latest>
+          <Card.Title fontWeight="800">{t(key)}</Card.Title>
+          <Text
+            fontSize="2xl"
+            fontWeight="800"
+            letterSpacing="-0.02em"
+            fontVariantNumeric="tabular-nums"
+            data-sensor-latest
+          >
             {latest === null ? "–" : `${number(latest)}${unit}`}
           </Text>
         </Flex>

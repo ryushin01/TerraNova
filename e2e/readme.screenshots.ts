@@ -158,6 +158,18 @@ test.describe("README screenshots with recorded readings", () => {
 
   test.use({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
 
+  test("sign in", async ({ browser }) => {
+    const signedOut = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      baseURL: "http://localhost:3000",
+    });
+    const page = await signedOut.newPage();
+    await page.goto("/ko/login");
+    await expect(page.getByRole("button", { name: "로그인" })).toBeEnabled();
+    await shoot(page, "login");
+    await signedOut.close();
+  });
+
   test("sensor history", async ({ page }) => {
     await page.goto("/ko/sensors");
     await expect(page.locator('[data-sensor-chart="soilMoisturePct"] .recharts-line')).toBeVisible();

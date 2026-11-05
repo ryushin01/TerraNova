@@ -79,8 +79,7 @@ test.describe("browser memory", () => {
         ["사용자 관리", /\/ko\/users$/],
         ["구역 현황", /\/ko$/],
       ] as const) {
-        const menu = await farm.openAccountMenu();
-        await menu.getByRole("menuitem", { name: item }).click();
+        await farm.goTo(item);
         await expect(page).toHaveURL(url);
       }
       await expect(farm.card("zone-f").getByRole("progressbar")).toHaveAttribute("aria-valuenow", /\d/);

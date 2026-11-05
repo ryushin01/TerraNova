@@ -101,6 +101,13 @@ export class Farm {
     await expect(this.page.locator('[data-scope="toast"][data-part="root"]')).toHaveCount(0, { timeout: 15_000 });
   }
 
+  /** Follows a link in the side navigation. */
+  async goTo(name: string): Promise<void> {
+    await this.navLink(name).click();
+  }
+
+  navLink = (name: string): Locator => this.page.getByRole("navigation").getByRole("link", { name });
+
   /** Opens the menu of the signed-in user in the page header. */
   async openAccountMenu(): Promise<Locator> {
     await this.page.getByRole("button", { name: "계정 메뉴" }).click();

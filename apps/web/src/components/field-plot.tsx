@@ -1,10 +1,10 @@
 "use client";
 
-import { Box, Grid, HStack, Icon, Text, Wrap } from "@chakra-ui/react";
+import { Box, Grid, HStack, Text, Wrap } from "@chakra-ui/react";
 import { type CropIconKey, SOIL_SUFFICIENT_PCT, type WateringState } from "@terranova/shared";
 import { useTranslations } from "next-intl";
 import { memo } from "react";
-import { CROP_ICONS } from "./crops";
+import { CropIcon } from "./crops";
 
 const COLUMNS = 8;
 const ROWS = 4;
@@ -61,7 +61,6 @@ interface FieldPlotProps {
 
 export const FieldPlot = memo(function FieldPlot({ look, label, icon }: FieldPlotProps) {
   const animation = ANIMATIONS[look];
-  const cropIcon = icon && CROP_ICONS[icon];
   return (
     <Grid
       role="img"
@@ -70,16 +69,12 @@ export const FieldPlot = memo(function FieldPlot({ look, label, icon }: FieldPlo
       data-crop-icon={icon}
       templateColumns={`repeat(${COLUMNS}, 1fr)`}
       gap="1"
-      p="1.5"
-      bg="bg.muted"
-      borderRadius="md"
     >
       {CELLS.map((cell) => (
         <Box
           key={cell.key}
           data-cell
           aspectRatio={1}
-          borderRadius="xs"
           bg={`field.${look}`}
           transition="background-color 0.3s"
           animation={animation}
@@ -89,7 +84,7 @@ export const FieldPlot = memo(function FieldPlot({ look, label, icon }: FieldPlo
           justifyContent="center"
           style={animation ? { animationDelay: `${cell.delayMs}ms` } : undefined}
         >
-          {cropIcon && <Icon as={cropIcon} boxSize="65%" color="blackAlpha.700" aria-hidden />}
+          {icon && <CropIcon icon={icon} boxSize="70%" />}
         </Box>
       ))}
     </Grid>
@@ -102,7 +97,7 @@ export function FieldLegend() {
     <Wrap gap="3" aria-label={t("legendTitle")}>
       {LEGEND.map((look) => (
         <HStack key={look} gap="1.5">
-          <Box boxSize="3" borderRadius="xs" bg={`field.${look}`} />
+          <Box boxSize="3" bg={`field.${look}`} />
           <Text textStyle="xs" color="fg.muted">
             {t(`legend.${look}`)}
           </Text>

@@ -127,7 +127,13 @@
     "selectZone": "Select zone {zone}",
     "automation": "Automatic control",
     "automationOn": "Automatic",
-    "automationPaused": "Manual setting held until {time} (automatic control paused)"
+    "automationPaused": "Manual setting held until {time} (automatic control paused)",
+    "summary": {
+      "online": "Zones online",
+      "watering": "Watering",
+      "alarms": "Waiting alarms",
+      "soil": "Average soil moisture"
+    }
   },
   "nav": {
     "users": "Users",
@@ -142,7 +148,10 @@
     "notificationsDisabled": "Notifications are off.",
     "notificationsDenied": "Please allow notifications in your browser settings.",
     "notificationsUnavailable": "Notifications aren't available here. They need a certificate your browser trusts.",
-    "sensors": "Sensor history"
+    "sensors": "Sensor history",
+    "navigation": "Main menu",
+    "openNavigation": "Open menu",
+    "closeNavigation": "Close menu"
   },
   "roles": {
     "admin": "Admin",
@@ -161,7 +170,9 @@
     "createAdmin": "Create admin",
     "loginFailed": "Email or password doesn't match.",
     "setupFailed": "Couldn't create the account. Please check your entries.",
-    "requestFailed": "Couldn't reach the server. Please try again."
+    "requestFailed": "Couldn't reach the server. Please try again.",
+    "heroTitle": "See every field at a glance. People decide when to water.",
+    "heroBody": "Live sensors, alarms and per-zone control in one place."
   },
   "users": {
     "title": "Users",

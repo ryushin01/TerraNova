@@ -14,9 +14,9 @@ test.describe("sections and crops", () => {
     await expect(farm.section("bellflower").locator('[data-zone="zone-a"]')).toBeVisible();
     await expect(farm.section("rice").locator('[data-zone="zone-c"]')).toBeVisible();
     await expect(farm.section("lettuce").locator('[data-zone="zone-f"]')).toBeVisible();
-    await expect(farm.card("zone-a").locator("[data-cell] svg")).toHaveCount(32);
+    await expect(farm.card("zone-a").locator("[data-cell] img")).toHaveCount(32);
 
-    const iconOf = (zone: string) => farm.card(zone).locator("[data-cell] svg").first().innerHTML();
+    const iconOf = (zone: string) => farm.card(zone).locator("[data-cell] img").first().getAttribute("src");
     expect(new Set([await iconOf("zone-a"), await iconOf("zone-c"), await iconOf("zone-e")]).size).toBe(3);
   });
 

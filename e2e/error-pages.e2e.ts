@@ -8,9 +8,7 @@ test.describe("not-found page", () => {
   test.beforeAll(createAdmin);
   test.beforeEach(({ context }) => signIn(context));
 
-  test("an unknown path shows the 404 screen in the current language and links home", async ({
-    page,
-  }) => {
+  test("an unknown path shows the 404 screen in the current language and links home", async ({ page }) => {
     const response = await page.goto("/ko/no-such-page");
     expect(response?.status()).toBe(404);
     await expect(page.getByRole("heading", { name: "페이지를 찾을 수 없어요" })).toBeVisible();

@@ -8,7 +8,7 @@ const SCROLL_STEP_PX = 14;
 
 /** Pressing on these keeps its normal behavior instead of starting a selection. */
 const IGNORED =
-  "button, a, input, select, textarea, label, header, form, [role=menu], [role=dialog], [role=alertdialog], " +
+  "button, a, input, select, textarea, label, header, aside, nav, form, [role=menu], [role=dialog], [role=alertdialog], " +
   '[data-scope="toast"], [data-scope="action-bar"], [data-scope="alert"], [data-part="control"]';
 
 export interface Marquee {

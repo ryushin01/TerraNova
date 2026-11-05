@@ -1,10 +1,10 @@
 "use client";
 
-import { Button, Center, Dialog, Field, Grid, Icon, IconButton, Input, Portal, Stack, Text } from "@chakra-ui/react";
-import { type AddCropResult, CROP_ICON_KEYS, type CropIconKey, suggestCropIcon } from "@terranova/shared";
+import { Button, Center, Dialog, Field, Grid, IconButton, Input, Portal, Stack, Text } from "@chakra-ui/react";
+import { type AddCropResult, type CropIconKey, suggestCropIcon } from "@terranova/shared";
 import { useTranslations } from "next-intl";
 import { type FormEvent, useEffect, useState } from "react";
-import { CROP_ICONS } from "./crops";
+import { CROP_ICON_CHOICES, CropIcon } from "./crops";
 
 const MAX_NAME_LENGTH = 30;
 
@@ -71,7 +71,7 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
               <Dialog.Body>
                 <Stack gap="4">
                   <Center flexDirection="column" gap="1" py="3" bg="bg.muted" borderRadius="md">
-                    <Icon as={CROP_ICONS[icon]} boxSize="12" data-preview-icon={icon} aria-hidden />
+                    <CropIcon icon={icon} boxSize="14" data-preview-icon={icon} />
                     <Text fontWeight="medium" data-preview-name>
                       {trimmed || t("namePlaceholder")}
                     </Text>
@@ -111,7 +111,7 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
                       borderWidth="1px"
                       borderRadius="md"
                     >
-                      {CROP_ICON_KEYS.map((key) => (
+                      {CROP_ICON_CHOICES.map((key) => (
                         <IconButton
                           key={key}
                           type="button"
@@ -119,10 +119,10 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
                           data-icon-option={key}
                           aria-label={key}
                           aria-pressed={icon === key}
-                          variant={icon === key ? "solid" : "ghost"}
+                          variant={icon === key ? "subtle" : "ghost"}
                           onClick={() => setChosenIcon(key)}
                         >
-                          <Icon as={CROP_ICONS[key]} />
+                          <CropIcon icon={key} boxSize="7" />
                         </IconButton>
                       ))}
                     </Grid>

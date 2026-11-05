@@ -25,9 +25,7 @@ export default function GlobalError({ error, retry }: { error: unknown; retry: (
         <title>문제가 발생했어요</title>
         <main style={{ maxWidth: 384, margin: "0 auto" }}>
           <h1 style={{ margin: "0 0 12px", fontSize: 28 }}>문제가 발생했어요</h1>
-          <p style={{ margin: "0 0 4px", color: "#52525b" }}>
-            화면을 불러오지 못했어요. 다시 시도해 주세요.
-          </p>
+          <p style={{ margin: "0 0 4px", color: "#52525b" }}>화면을 불러오지 못했어요. 다시 시도해 주세요.</p>
           <p lang="en" style={{ margin: "0 0 24px", color: "#52525b" }}>
             Something went wrong. Please try again.
           </p>

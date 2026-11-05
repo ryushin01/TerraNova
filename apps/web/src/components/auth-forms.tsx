@@ -1,22 +1,85 @@
 "use client";
 
-import { Alert, Button, Card, Container, Field, Input, Stack, Text } from "@chakra-ui/react";
+import { Alert, Box, Button, Field, Flex, Grid, Heading, Input, Stack, Text } from "@chakra-ui/react";
+import type { CropIconKey } from "@terranova/shared";
 import { useTranslations } from "next-intl";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
+import { Logo } from "./app-shell";
+import { CropIcon } from "./crops";
+
+const HERO_CROPS: CropIconKey[] = ["tomato", "corn", "flower", "wheat", "carrot", "leaf"];
 
 function AuthCard({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  const t = useTranslations("auth");
   return (
-    <Container maxW="sm" px="4" py={{ base: "8", md: "16" }}>
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>{title}</Card.Title>
-          {description && <Card.Description>{description}</Card.Description>}
-        </Card.Header>
-        <Card.Body>{children}</Card.Body>
-      </Card.Root>
-    </Container>
+    <Flex minH="100dvh" direction={{ base: "column", lg: "row" }}>
+      <Flex
+        hideBelow="lg"
+        flex="1.2"
+        direction="column"
+        justify="space-between"
+        p="8"
+        position="relative"
+        overflow="hidden"
+      >
+        <Logo />
+        {/* A thin cut-corner frame around the crops: decoration only. */}
+        <Box position="absolute" top="14%" right="6%" w="62%" h="56%" aria-hidden>
+          <Box
+            as="svg"
+            w="full"
+            h="full"
+            {...{ viewBox: "0 0 100 100", preserveAspectRatio: "none" }}
+            overflow="visible"
+          >
+            <path
+              d="M0 0 H72 L100 28 V100 H26 L0 76 Z"
+              fill="none"
+              stroke="var(--chakra-colors-copper)"
+              strokeWidth="1.5"
+              vectorEffect="non-scaling-stroke"
+            />
+          </Box>
+          <Grid position="absolute" inset="0" placeItems="center" p="10%">
+            <Grid templateColumns="repeat(3, 1fr)" gap="6">
+              {HERO_CROPS.map((crop) => (
+                <CropIcon key={crop} icon={crop} boxSize={{ lg: "16", xl: "20" }} />
+              ))}
+            </Grid>
+          </Grid>
+        </Box>
+        <Stack gap="4" maxW="lg" position="relative">
+          <Heading
+            as="p"
+            fontSize={{ lg: "4xl", xl: "5xl" }}
+            fontWeight="800"
+            letterSpacing="-0.025em"
+            lineHeight="1.12"
+          >
+            {t("heroTitle")}
+          </Heading>
+          <Text fontWeight="bold">{t("heroBody")}</Text>
+        </Stack>
+      </Flex>
+      <Flex flex="1" align="center" justify="center" px="4" py="8" bg={{ lg: "white" }}>
+        <Box w="full" maxW="sm">
+          <Box mb="8" hideFrom="lg">
+            <Logo />
+          </Box>
+          <Heading as="h1" fontSize="3xl" fontWeight="800" letterSpacing="-0.02em">
+            {title}
+          </Heading>
+          {description && (
+            <Text color="fg.muted" mt="2">
+              {description}
+            </Text>
+          )}
+          <Box mt="6">{children}</Box>
+        </Box>
+      </Flex>
+    </Flex>
   );
 }
 

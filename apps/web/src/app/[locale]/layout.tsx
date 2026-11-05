@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -11,6 +12,13 @@ interface Props {
   children: ReactNode;
   params: Promise<{ locale: string }>;
 }
+
+const pretendard = localFont({
+  src: "../../fonts/PretendardVariable.woff2",
+  variable: "--font-pretendard",
+  weight: "45 920",
+  display: "swap",
+});
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
@@ -30,7 +38,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   setRequestLocale(locale);
 
   return (
-    <html lang={locale}>
+    <html lang={locale} className={pretendard.variable}>
       <body>
         <NextIntlClientProvider>
           <Provider>

@@ -31,8 +31,7 @@ test.describe("control history", () => {
     await farm.menuItem(farm.zoneMenu("zone-f"), "벼 섹션으로 이동").click();
     await expect(farm.section("rice").locator('[data-zone="zone-f"]')).toBeVisible();
 
-    const menu = await farm.openAccountMenu();
-    await menu.getByRole("menuitem", { name: "제어 이력" }).click();
+    await farm.goTo("제어 이력");
     await expect(page).toHaveURL(/\/ko\/history$/);
 
     const row = (action: string) => page.locator(`[data-history-row="${action}"]`);
@@ -104,9 +103,7 @@ test.describe("control history", () => {
     const farm = new Farm(viewerPage);
     await farm.open();
 
-    const menu = await farm.openAccountMenu();
-    await expect(menu.getByRole("menuitem", { name: "제어 이력" })).toHaveCount(0);
-    await viewerPage.keyboard.press("Escape");
+    await expect(farm.navLink("제어 이력")).toHaveCount(0);
     await viewerPage.goto("/ko/history");
     await expect(viewerPage.getByText("관리자와 작업자만")).toBeVisible();
     expect((await viewerContext.request.get("/api/history")).status()).toBe(403);
