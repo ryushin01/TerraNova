@@ -77,6 +77,14 @@ export function UsersAdmin() {
   const [removing, setRemoving] = useState<UserRow | null>(null);
   const [resetting, setResetting] = useState<UserRow | null>(null);
   const resetForm = useForm({ defaultValues: { "new-password": "" } });
+  const resetBusy = resetForm.formState.isSubmitting;
+  const clearResetForm = resetForm.reset;
+
+  // Clear once closed, so a password never stays in the form state. A reset still running keeps its
+  // submitting state until it ends, so reopening can't send a second one alongside it.
+  useEffect(() => {
+    if (!resetting && !resetBusy) clearResetForm();
+  }, [resetting, resetBusy, clearResetForm]);
   const isAdmin = session?.user.role === "admin";
 
   const load = useCallback(async () => {
@@ -116,11 +124,7 @@ export function UsersAdmin() {
     await load();
   };
 
-  // Clear on close, so a password never stays in the form state.
-  const closeReset = () => {
-    resetForm.reset();
-    setResetting(null);
-  };
+  const closeReset = () => setResetting(null);
 
   const resetPassword = resetForm.handleSubmit(async ({ "new-password": newPassword }) => {
     if (!resetting) return;
@@ -278,7 +282,7 @@ export function UsersAdmin() {
                   <Button type="button" variant="outline" onClick={closeReset}>
                     {t("cancel")}
                   </Button>
-                  <Button type="submit" data-reset-password-submit loading={resetForm.formState.isSubmitting}>
+                  <Button type="submit" data-reset-password-submit loading={resetBusy}>
                     {t("resetSubmit")}
                   </Button>
                 </Dialog.Footer>

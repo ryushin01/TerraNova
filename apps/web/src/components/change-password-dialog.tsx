@@ -2,6 +2,7 @@
 
 import { Button, Dialog, Field, Input, Portal, Stack } from "@chakra-ui/react";
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { authClient } from "@/lib/auth-client";
 import { toaster } from "./toaster";
@@ -17,11 +18,13 @@ export function ChangePasswordDialog({ open, onClose }: { open: boolean; onClose
   } = useForm({ defaultValues: { current: "", next: "", confirm: "" } });
   const error = errors.confirm?.message ?? errors.root?.server?.message;
 
-  // Clear on close, so a password never stays in the form state.
-  const close = () => {
-    reset();
-    onClose();
-  };
+  // Clear once closed, so a password never stays in the form state. A save still running keeps its
+  // submitting state until it ends, so reopening can't send a second one alongside it.
+  useEffect(() => {
+    if (!open && !isSubmitting) reset();
+  }, [open, isSubmitting, reset]);
+
+  const close = onClose;
 
   const submit = handleSubmit(async ({ current, next }) => {
     const result = await authClient.changePassword({

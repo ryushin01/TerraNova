@@ -3,7 +3,7 @@
 import { Button, Center, Dialog, Field, Grid, IconButton, Input, Portal, Stack, Text } from "@chakra-ui/react";
 import { type AddCropResult, type CropIconKey, suggestCropIcon } from "@terranova/shared";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { CROP_ICON_CHOICES, CropIcon } from "./crops";
 
@@ -29,6 +29,8 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
     formState: { errors, isSubmitting },
   } = useForm({ defaultValues: { name: "" } });
   const name = watch("name");
+  const saving = useRef(false);
+  saving.current = isSubmitting;
   /** Null means the icon follows the name. It stops once someone picks one by hand. */
   const [chosenIcon, setChosenIcon] = useState<CropIconKey | null>(null);
   const error = errors.name?.message;
@@ -36,18 +38,22 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
   // An edit starts from the crop's icon, so renaming doesn't swap it behind someone's back.
   useEffect(() => {
     if (!open) return;
+    // Resetting would forget a save still running, and reopening could then send a second one.
+    if (saving.current) return;
     reset({ name: editing?.name ?? "" });
     setChosenIcon(editing?.icon ?? null);
   }, [open, editing, reset]);
 
+  useEffect(() => {
+    if (open || isSubmitting) return;
+    reset({ name: "" });
+    setChosenIcon(null);
+  }, [open, isSubmitting, reset]);
+
   const icon = chosenIcon ?? suggestCropIcon(name);
   const trimmed = name.trim();
 
-  const close = () => {
-    reset({ name: "" });
-    setChosenIcon(null);
-    onClose();
-  };
+  const close = onClose;
 
   const submit = handleSubmit(async () => {
     if (!trimmed) return;

@@ -3,6 +3,7 @@
 import { Button, Dialog, Field, Fieldset, HStack, Input, Portal, Stack, Text } from "@chakra-ui/react";
 import { type AutomationRules, type ControlResult, normalizeAutomation } from "@terranova/shared";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 interface Props {
@@ -18,6 +19,17 @@ const textOrNull = (text: string) => text.trim() || null;
 const toText = (value: number | string | null | undefined) => (value == null ? "" : String(value));
 
 export function AutomationDialog({ section, onClose, onSave }: Props) {
+  // Kept outside the form, which remounts on close, so reopening can't send a second save alongside one still running.
+  const [saving, setSaving] = useState(false);
+  const save: Props["onSave"] = async (rules) => {
+    setSaving(true);
+    try {
+      return await onSave(rules);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Dialog.Root
       open={!!section}
@@ -30,7 +42,7 @@ export function AutomationDialog({ section, onClose, onSave }: Props) {
         <Dialog.Positioner>
           <Dialog.Content mx="4">
             {/* Remounts per section, so the fields start from that section's rules. */}
-            <AutomationForm key={section?.name} section={section} onClose={onClose} onSave={onSave} />
+            <AutomationForm key={section?.name} section={section} onClose={onClose} onSave={save} saving={saving} />
           </Dialog.Content>
         </Dialog.Positioner>
       </Portal>
@@ -38,14 +50,14 @@ export function AutomationDialog({ section, onClose, onSave }: Props) {
   );
 }
 
-function AutomationForm({ section, onClose, onSave }: Props) {
+function AutomationForm({ section, onClose, onSave, saving }: Props & { saving: boolean }) {
   const t = useTranslations("automation");
   const rules = section?.rules;
   const {
     register,
     handleSubmit,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm({
     defaultValues: {
       "vent-on": toText(rules?.ventOnAboveC),
@@ -139,7 +151,7 @@ function AutomationForm({ section, onClose, onSave }: Props) {
         <Button type="button" variant="outline" onClick={onClose}>
           {t("cancel")}
         </Button>
-        <Button type="submit" data-automation-save loading={isSubmitting}>
+        <Button type="submit" data-automation-save loading={saving}>
           {t("save")}
         </Button>
       </Dialog.Footer>

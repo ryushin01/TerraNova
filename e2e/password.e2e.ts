@@ -34,6 +34,36 @@ test.describe.configure({ mode: "serial" });
 test.describe("passwords", () => {
   const stack = useStack({}, { SIM_INITIAL_SOIL: "30" });
 
+  test("a change still running stays guarded after closing and reopening the dialog", async ({ page, context }) => {
+    await signIn(context);
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const requests: string[] = [];
+    await page.route("**/api/auth/change-password", async (route) => {
+      requests.push(route.request().url());
+      await held;
+      await route.fulfill({ status: 400, json: { message: "held test response" } });
+    });
+
+    await new Farm(page).open();
+    await changeOwnPassword(page, "wrong-current-1", "next-password-1");
+    await expect.poll(() => requests.length).toBe(1);
+    const submit = page.locator("[data-change-password-submit]");
+    await page.getByRole("dialog").getByRole("button", { name: "취소" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+
+    const menu = await new Farm(page).openAccountMenu();
+    await menu.getByRole("menuitem", { name: "비밀번호 변경" }).click();
+    await expect(submit).toBeDisabled();
+
+    release();
+    await expect(submit).toBeEnabled();
+    expect(requests).toHaveLength(1);
+    await page.unroute("**/api/auth/change-password");
+  });
+
   test.beforeAll(createAdmin);
 
   test("an admin resets someone's password, ending that person's sign-ins at once", async ({
