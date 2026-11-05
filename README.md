@@ -44,11 +44,11 @@
 
 | 구분 | 사용 기술 |
 |---|---|
-| 웹 | Next.js 16, React 19, Chakra UI 3, next-intl, react-icons |
+| 웹 | Next.js 16, React 19, Chakra UI 3, Recharts, next-intl, next-themes, react-icons |
 | 백엔드 | Bun, Socket.IO, Aedes(MQTT 브로커), Better Auth |
 | 데이터 | PGlite, Drizzle ORM |
 | 장비 통신 | MQTT (시뮬레이터로 대체) |
-| 공통 | TypeScript 7, Bun workspaces, Bun test, Playwright |
+| 공통 | TypeScript 7, Bun workspaces, Bun test, Playwright, Biome |
 
 ## 시작하기
 
