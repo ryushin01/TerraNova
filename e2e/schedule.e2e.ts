@@ -26,7 +26,10 @@ function defaultsAwayFromNow(): readonly [string, string] {
     const sinceSlot = (now - minutes(time) + 1440) % 1440;
     return sinceSlot <= 40 || sinceSlot >= 1440 - 30;
   };
-  const pairs = [["07:15", "19:45"], ["01:15", "13:45"]] as const;
+  const pairs = [
+    ["07:15", "19:45"],
+    ["01:15", "13:45"],
+  ] as const;
   return pairs.find((pair) => !pair.some(isNear)) ?? pairs[0];
 }
 
