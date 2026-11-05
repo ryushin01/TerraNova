@@ -23,7 +23,7 @@ test.describe("editing sections", () => {
     const menu = await openMenu(farm, "rice");
     await menu.getByRole("menuitem", { name: "이름, 아이콘 수정" }).click();
 
-    const name = page.locator('[name="crop-name"]');
+    const name = page.locator('[name="name"]');
     await expect(name).toHaveValue("벼");
     await expect(page.locator("[data-preview-icon]")).toHaveAttribute("data-preview-icon", "wheat");
 
@@ -57,7 +57,7 @@ test.describe("editing sections", () => {
     await farm.open();
     const menu = await openMenu(farm, "rice");
     await menu.getByRole("menuitem", { name: "이름, 아이콘 수정" }).click();
-    await page.locator('[name="crop-name"]').fill("도라지");
+    await page.locator('[name="name"]').fill("도라지");
     await page.locator("[data-add-crop-submit]").click();
     await expect(page.getByText("이미 있는 작물이에요")).toBeVisible();
     await page.getByRole("dialog").getByRole("button", { name: "취소" }).click();

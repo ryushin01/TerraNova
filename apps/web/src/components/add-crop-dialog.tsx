@@ -3,7 +3,8 @@
 import { Button, Center, Dialog, Field, Grid, IconButton, Input, Portal, Stack, Text } from "@chakra-ui/react";
 import { type AddCropResult, type CropIconKey, suggestCropIcon } from "@terranova/shared";
 import { useTranslations } from "next-intl";
-import { type FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { CROP_ICON_CHOICES, CropIcon } from "./crops";
 
 const MAX_NAME_LENGTH = 30;
@@ -19,40 +20,44 @@ interface Props {
 export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
   const t = useTranslations("addCrop");
   const tIcons = useTranslations("cropIcons");
-  const [name, setName] = useState("");
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    watch,
+    formState: { errors },
+  } = useForm({ defaultValues: { name: "" } });
+  const name = watch("name");
+  // Kept outside the form: reopening resets the form, but must not let a second save start alongside one still running.
+  const [saving, setSaving] = useState(false);
   /** Null means the icon follows the name. It stops once someone picks one by hand. */
   const [chosenIcon, setChosenIcon] = useState<CropIconKey | null>(null);
-  const [error, setError] = useState<"duplicate" | "other" | null>(null);
-  const [saving, setSaving] = useState(false);
+  const error = errors.name?.message;
 
   // An edit starts from the crop's icon, so renaming doesn't swap it behind someone's back.
   useEffect(() => {
     if (!open) return;
-    setName(editing?.name ?? "");
+    reset({ name: editing?.name ?? "" });
     setChosenIcon(editing?.icon ?? null);
-    setError(null);
-  }, [open, editing]);
+  }, [open, editing, reset]);
 
   const icon = chosenIcon ?? suggestCropIcon(name);
   const trimmed = name.trim();
 
   const close = () => {
-    setName("");
+    reset({ name: "" });
     setChosenIcon(null);
-    setError(null);
     onClose();
   };
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!trimmed || saving) return;
+  const submit = handleSubmit(async () => {
+    if (!trimmed) return;
     setSaving(true);
-    setError(null);
-    const result = await onSubmit(trimmed, icon);
-    setSaving(false);
+    const result = await onSubmit(trimmed, icon).finally(() => setSaving(false));
     if (result.ok) close();
-    else setError(result.error === "duplicate" ? "duplicate" : "other");
-  };
+    else setError("name", { message: t(result.error === "duplicate" ? "duplicate" : "failed") });
+  });
 
   return (
     <Dialog.Root
@@ -84,19 +89,14 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
                   <Field.Root required invalid={!!error}>
                     <Field.Label>{t("name")}</Field.Label>
                     <Input
-                      name="crop-name"
+                      {...register("name")}
                       autoFocus
                       autoComplete="off"
                       size="lg"
                       maxLength={MAX_NAME_LENGTH}
                       placeholder={t("namePlaceholder")}
-                      value={name}
-                      onChange={(event) => {
-                        setName(event.currentTarget.value);
-                        setError(null);
-                      }}
                     />
-                    {error && <Field.ErrorText>{t(error === "duplicate" ? "duplicate" : "failed")}</Field.ErrorText>}
+                    {error && <Field.ErrorText>{error}</Field.ErrorText>}
                   </Field.Root>
 
                   <Stack gap="1.5">

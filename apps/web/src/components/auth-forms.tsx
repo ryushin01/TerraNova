@@ -3,7 +3,8 @@
 import { Alert, Box, Button, Field, Flex, Grid, Heading, Input, Stack, Text } from "@chakra-ui/react";
 import type { CropIconKey } from "@terranova/shared";
 import { useTranslations } from "next-intl";
-import { type FormEvent, type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Logo } from "./app-shell";
@@ -93,15 +94,17 @@ function useInteractive() {
   return interactive;
 }
 
-const formValues = (event: FormEvent<HTMLFormElement>) =>
-  Object.fromEntries(new FormData(event.currentTarget)) as Record<string, string>;
-
 export function LoginForm() {
   const t = useTranslations("auth");
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm({ defaultValues: { email: "", password: "" } });
   const interactive = useInteractive();
+  const error = errors.root?.server?.message;
 
   useEffect(() => {
     fetch("/api/setup")
@@ -109,19 +112,14 @@ export function LoginForm() {
       .then((status) => {
         if (status.needsSetup) router.replace("/setup");
       })
-      .catch(() => setError(t("requestFailed")));
-  }, [router, t]);
+      .catch(() => setError("root.server", { message: t("requestFailed") }));
+  }, [router, setError, t]);
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const { email = "", password = "" } = formValues(event);
-    setLoading(true);
-    setError(null);
+  const submit = handleSubmit(async ({ email, password }) => {
     const result = await authClient.signIn.email({ email, password });
-    setLoading(false);
-    if (result.error) setError(t("loginFailed"));
+    if (result.error) setError("root.server", { message: t("loginFailed") });
     else router.replace("/");
-  };
+  });
 
   return (
     <AuthCard title={t("loginTitle")}>
@@ -135,13 +133,13 @@ export function LoginForm() {
           )}
           <Field.Root required>
             <Field.Label>{t("email")}</Field.Label>
-            <Input name="email" type="email" autoComplete="email" size="lg" />
+            <Input {...register("email")} type="email" autoComplete="email" size="lg" />
           </Field.Root>
           <Field.Root required>
             <Field.Label>{t("password")}</Field.Label>
-            <Input name="password" type="password" autoComplete="current-password" size="lg" />
+            <Input {...register("password")} type="password" autoComplete="current-password" size="lg" />
           </Field.Root>
-          <Button type="submit" size="lg" loading={loading} disabled={!interactive}>
+          <Button type="submit" size="lg" loading={isSubmitting} disabled={!interactive}>
             {t("login")}
           </Button>
         </Stack>
@@ -153,15 +151,16 @@ export function LoginForm() {
 export function SetupForm() {
   const t = useTranslations("auth");
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm({ defaultValues: { name: "", email: "", password: "" } });
   const interactive = useInteractive();
+  const error = errors.root?.server?.message;
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const { name, email = "", password = "" } = formValues(event);
-    setLoading(true);
-    setError(null);
+  const submit = handleSubmit(async ({ name, email, password }) => {
     try {
       const response = await fetch("/api/setup", {
         method: "POST",
@@ -171,16 +170,15 @@ export function SetupForm() {
       if (response.status === 409) {
         router.replace("/login");
       } else if (!response.ok) {
-        setError(t("setupFailed"));
+        setError("root.server", { message: t("setupFailed") });
       } else {
         const result = await authClient.signIn.email({ email, password });
         router.replace(result.error ? "/login" : "/");
       }
     } catch {
-      setError(t("requestFailed"));
+      setError("root.server", { message: t("requestFailed") });
     }
-    setLoading(false);
-  };
+  });
 
   return (
     <AuthCard title={t("setupTitle")} description={t("setupDescription")}>
@@ -194,20 +192,20 @@ export function SetupForm() {
           )}
           <Field.Root required>
             <Field.Label>{t("name")}</Field.Label>
-            <Input name="name" autoComplete="name" size="lg" />
+            <Input {...register("name")} autoComplete="name" size="lg" />
           </Field.Root>
           <Field.Root required>
             <Field.Label>{t("email")}</Field.Label>
-            <Input name="email" type="email" autoComplete="email" size="lg" />
+            <Input {...register("email")} type="email" autoComplete="email" size="lg" />
           </Field.Root>
           <Field.Root required>
             <Field.Label>{t("password")}</Field.Label>
-            <Input name="password" type="password" autoComplete="new-password" minLength={8} size="lg" />
+            <Input {...register("password")} type="password" autoComplete="new-password" minLength={8} size="lg" />
             <Field.HelperText>
               <Text as="span">{t("passwordHelp")}</Text>
             </Field.HelperText>
           </Field.Root>
-          <Button type="submit" size="lg" loading={loading} disabled={!interactive}>
+          <Button type="submit" size="lg" loading={isSubmitting} disabled={!interactive}>
             {t("createAdmin")}
           </Button>
         </Stack>

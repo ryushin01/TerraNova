@@ -134,7 +134,7 @@ test.describe("alarm times", () => {
     const farm = new Farm(page);
     await farm.open();
     await page.locator("[data-add-crop]").click();
-    await page.locator('[name="crop-name"]').fill("토마토");
+    await page.locator('[name="name"]').fill("토마토");
     await page.locator("[data-add-crop-submit]").click();
     const section = page.locator("[data-section]", { has: page.getByRole("heading", { name: "토마토" }) });
     await expect(section.locator("[data-section-times]")).toContainText(DEFAULTS);
