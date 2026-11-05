@@ -1,0 +1,14 @@
+{
+  "name": "@terranova/simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "mqtt": "^5.16.1",
+    "@terranova/shared": "workspace:*"
+  }
+}

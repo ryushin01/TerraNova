@@ -1,0 +1,24 @@
+{
+  "name": "@terranova/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.15",
+    "@terranova/shared": "workspace:*",
+    "aedes": "^1.2.0",
+    "better-auth": "^1.7.17",
+    "drizzle-orm": "^0.45.4",
+    "mqtt": "^5.16.1",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.11",
+    "socket.io-client": "^4.8.4"
+  }
+}
