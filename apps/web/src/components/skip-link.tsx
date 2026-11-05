@@ -9,5 +9,9 @@ export const MAIN_ID = "main";
 /** Lets keyboard users jump past the repeated navigation. Hidden until it takes focus. */
 export function SkipLink() {
   const t = useTranslations("nav");
-  return <SkipNavLink id={MAIN_ID} zIndex="skipNav">{t("skipToMain")}</SkipNavLink>;
+  return (
+    <SkipNavLink id={MAIN_ID} zIndex="skipNav">
+      {t("skipToMain")}
+    </SkipNavLink>
+  );
 }
