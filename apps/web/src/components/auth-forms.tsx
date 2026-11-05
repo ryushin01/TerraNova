@@ -9,6 +9,7 @@ import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Logo } from "./app-shell";
 import { CropIcon } from "./crops";
+import { MAIN_ID } from "./skip-link";
 
 const HERO_CROPS: CropIconKey[] = ["tomato", "corn", "flower", "wheat", "carrot", "leaf"];
 
@@ -64,7 +65,17 @@ function AuthCard({ title, description, children }: { title: string; description
           <Text fontWeight="bold">{t("heroBody")}</Text>
         </Stack>
       </Flex>
-      <Flex flex="1" align="center" justify="center" px="4" py="8" bg={{ lg: "surface" }}>
+      <Flex
+        as="main"
+        id={MAIN_ID}
+        tabIndex={-1}
+        flex="1"
+        align="center"
+        justify="center"
+        px="4"
+        py="8"
+        bg={{ lg: "surface" }}
+      >
         <Box w="full" maxW="sm">
           <Box mb="8" hideFrom="lg">
             <Logo />

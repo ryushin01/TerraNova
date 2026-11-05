@@ -137,6 +137,7 @@
     "automationResume": "자동 제어 다시 켜기"
   },
   "nav": {
+    "skipToMain": "본문 바로가기",
     "users": "사용자 관리",
     "dashboard": "구역 현황",
     "signOut": "로그아웃",

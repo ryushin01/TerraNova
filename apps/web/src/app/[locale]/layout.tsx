@@ -5,6 +5,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 import { Provider } from "@/components/provider";
+import { SkipLink } from "@/components/skip-link";
 import { Toaster } from "@/components/toaster";
 import { routing } from "@/i18n/routing";
 
@@ -42,6 +43,7 @@ export default async function LocaleLayout({ children, params }: Props) {
       <body>
         <NextIntlClientProvider>
           <Provider>
+            <SkipLink />
             {children}
             <Toaster />
           </Provider>
