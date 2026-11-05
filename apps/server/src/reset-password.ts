@@ -16,6 +16,7 @@ import { eq } from "drizzle-orm";
 import { createAuth } from "./auth";
 import { openDatabase } from "./db";
 import { user } from "./db/schema";
+import { ControlHistory } from "./history";
 
 function fail(message: string): never {
   console.error(message);
@@ -57,7 +58,10 @@ if (!email) {
   console.log("Usage: bun run admin:reset-password <email>\n");
   console.log(admins.length > 0 ? `Admin accounts:\n${admins.map((a) => `  ${a.email}`).join("\n")}` : "No admin accounts yet.");
 } else {
-  const [account] = await database.db.select({ id: user.id }).from(user).where(eq(user.email, email));
+  const [account] = await database.db
+    .select({ id: user.id, name: user.name })
+    .from(user)
+    .where(eq(user.email, email));
   if (!account) {
     console.error(`No account with the email ${email}.`);
     exitCode = 1;
@@ -69,6 +73,9 @@ if (!email) {
     // replace it with one nobody ever saw, which would lock the account.
     await context.internalAdapter.deleteUserSessions(account.id);
     await context.internalAdapter.updatePassword(account.id, hash);
+    await new ControlHistory(database.db).record({ id: "local", name: "복구 명령", role: "local" }, [
+      { action: "password_reset", detail: { target: account.name }, result: "ok" },
+    ]);
     console.log(`Temporary password for ${email}:\n\n  ${password}\n`);
     console.log("Sign in with it, then change it from the account menu. Existing sign-ins have ended.");
   }

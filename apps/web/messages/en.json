@@ -112,7 +112,16 @@
     "cropRemoveFailed": "It can't be removed while it still has zones.",
     "noAlarmTimes": "No alarms",
     "editAlarmTimes": "Change alarm times for {section}",
-    "change": "Change"
+    "change": "Change",
+    "confirmAll": "Confirm all and water",
+    "confirmAllTitle": "Confirm {count} alarms and water?",
+    "showAlarms": "Show each",
+    "hideAlarms": "Collapse",
+    "sectionMore": "{section} section menu",
+    "editCrop": "Edit name and icon",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "cropUpdated": "Updated the {name} section."
   },
   "nav": {
     "users": "Users",
@@ -120,7 +129,13 @@
     "signOut": "Sign out",
     "menu": "Account menu",
     "history": "Control history",
-    "changePassword": "Change password"
+    "changePassword": "Change password",
+    "notificationsOn": "Turn notifications on",
+    "notificationsOff": "Turn notifications off",
+    "notificationsEnabled": "Notifications are on.",
+    "notificationsDisabled": "Notifications are off.",
+    "notificationsDenied": "Please allow notifications in your browser settings.",
+    "notificationsUnavailable": "Notifications aren't available here. They need a certificate your browser trusts."
   },
   "roles": {
     "admin": "Admin",
@@ -183,7 +198,9 @@
     "add": "Add",
     "cancel": "Cancel",
     "duplicate": "This crop already exists.",
-    "failed": "Couldn't add it. Please try again."
+    "failed": "Couldn't add it. Please try again.",
+    "editTitle": "Edit crop",
+    "save": "Save"
   },
   "alarmTimes": {
     "title": "{section} alarm times",
@@ -225,7 +242,11 @@
       "crop_add": "Add crop {name}",
       "crop_remove": "Remove crop {name}",
       "alarm_times": "Change {section} alarm times: {times}",
-      "noTimes": "none"
+      "noTimes": "none",
+      "crop_edit": "Edit crop {previous} → {name}",
+      "crops_reorder": "Change section order",
+      "password_change": "Change own password",
+      "password_reset": "Reset password for {name}"
     },
     "filters": {
       "alarm_confirm": "Confirm alarm",
@@ -235,7 +256,11 @@
       "zones_move": "Move zone",
       "crop_add": "Add crop",
       "crop_remove": "Remove crop",
-      "alarm_times": "Change alarm times"
+      "alarm_times": "Change alarm times",
+      "crop_edit": "Edit crop",
+      "crops_reorder": "Change section order",
+      "password_change": "Change password",
+      "password_reset": "Reset password"
     },
     "results": {
       "ok": "Success",

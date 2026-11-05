@@ -25,6 +25,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
+  BUILTIN_CROP_NAMES,
   MANUAL_ACTUATORS,
   SOIL_SUFFICIENT_PCT,
   ZONE_IDS,
@@ -69,10 +70,12 @@ export function Dashboard() {
   const router = useRouter();
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const tCrops = useTranslations("crops");
-  const [confirmWater, setConfirmWater] = useState<{ title: string; zoneIds: string[] } | null>(null);
+  const [confirmWater, setConfirmWater] = useState<{ title: string; zoneIds: string[]; alarms?: boolean } | null>(null);
+  const [showAlarmList, setShowAlarmList] = useState(false);
+  const [editingCrop, setEditingCrop] = useState<Crop | null>(null);
   const [addingCrop, setAddingCrop] = useState(false);
   const [editingTimes, setEditingTimes] = useState<{ id: string; name: string; times: string[] } | null>(null);
-  const { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, setAlarmTimes, removeCrop, stopPump, setActuator } =
+  const { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, updateCrop, reorderCrops, setAlarmTimes, removeCrop, stopPump, setActuator } =
     useFarm(
       () => router.replace("/login"),
       (cycle) => {
@@ -85,7 +88,8 @@ export function Dashboard() {
 
   const connected = connection === "connected";
   const allowed = canControl(session?.user.role);
-  const cropName = (crop: Crop) => (tCrops.has(crop.id as never) ? tCrops(crop.id as never) : crop.name);
+  const cropName = (crop: Crop) =>
+    crop.name === BUILTIN_CROP_NAMES[crop.id] && tCrops.has(crop.id as never) ? tCrops(crop.id as never) : crop.name;
   const { selected, clear, marquee, pointer, dropTarget } = useFieldSelection(allowed, (zoneIds, cropId) => {
     const moving = zoneIds.filter((id) => sections[id] !== cropId);
     if (moving.length > 0) run(`move:${moving.join()}`, () => moveZones(moving, cropId));
@@ -142,11 +146,24 @@ export function Dashboard() {
     }
   };
 
-  const waterZones = (zoneIds: string[]) =>
-    runZones(zoneIds, startWatering, (results) => {
-      const started = results.filter((r) => r.ok && r.cycle.state === "command_sent").length;
-      return t("bulkWaterResult", { started, excluded: results.length - started });
-    });
+  const summarizeWatering = (results: ConfirmResult[]) => {
+    const started = results.filter((r) => r.ok && r.cycle.state === "command_sent").length;
+    return t("bulkWaterResult", { started, excluded: results.length - started });
+  };
+
+  const waterZones = (zoneIds: string[]) => runZones(zoneIds, startWatering, summarizeWatering);
+
+  const confirmAlarms = (zoneIds: string[]) =>
+    runZones(zoneIds, (zoneId) => confirmAlarm(cycles[zoneId]!.id), summarizeWatering);
+
+  const moveSection = (crop: Crop, step: -1 | 1) => {
+    const ids = crops.map(({ id }) => id);
+    const from = ids.indexOf(crop.id);
+    const to = from + step;
+    if (to < 0 || to >= ids.length) return;
+    [ids[from], ids[to]] = [ids[to]!, ids[from]!];
+    run(`reorder:${crop.id}`, () => reorderCrops(ids));
+  };
 
   /** Runs a value from the bulk menu items on a group of zones. */
   const applyBulk = (zoneIds: string[], value: string) => {
@@ -194,6 +211,12 @@ export function Dashboard() {
     return result;
   };
 
+  const handleUpdateCrop = async (name: string, icon: CropIconKey) => {
+    const result = await updateCrop(editingCrop!.id, name, icon);
+    if (result.ok) toaster.create({ type: "success", title: t("cropUpdated", { name }) });
+    return result;
+  };
+
   const handleRemoveCrop = async (crop: Crop) => {
     const result = await removeCrop(crop.id);
     if (!result.ok) toaster.create({ type: "error", title: t("cropRemoveFailed") });
@@ -216,7 +239,35 @@ export function Dashboard() {
 
       {(alarms.length > 0 || pumping.length > 0) && (
         <Stack gap="2" position="sticky" top="2" zIndex="sticky" maxH="50vh" overflowY="auto">
-          {alarms.map((alarm) => (
+          {alarms.length > 1 && (
+            <Alert.Root status="warning" alignItems="center" flexWrap="wrap" gap="3">
+              <Alert.Indicator />
+              <Alert.Title flex="1" minW="40" data-alarm-summary>
+                {t("alarm", { zone: alarms.map((alarm) => zoneLetter(alarm.zoneId)).join(", ") })}
+              </Alert.Title>
+              <Button size="lg" variant="ghost" onClick={() => setShowAlarmList((shown) => !shown)}>
+                {t(showAlarmList ? "hideAlarms" : "showAlarms")}
+              </Button>
+              {allowed && (
+                <Button
+                  size="lg"
+                  colorPalette="orange"
+                  data-confirm-all
+                  disabled={!connected}
+                  onClick={() =>
+                    setConfirmWater({
+                      title: t("confirmAllTitle", { count: alarms.length }),
+                      zoneIds: alarms.map((alarm) => alarm.zoneId),
+                      alarms: true,
+                    })
+                  }
+                >
+                  {t("confirmAll")}
+                </Button>
+              )}
+            </Alert.Root>
+          )}
+          {(alarms.length === 1 || showAlarmList) && alarms.map((alarm) => (
             <Alert.Root key={alarm.id} status="warning" alignItems="center" flexWrap="wrap" gap="3">
               <Alert.Indicator />
               <Alert.Title flex="1" minW="40">
@@ -297,6 +348,41 @@ export function Dashboard() {
                   {cropName(crop)}
                 </Heading>
                 <Badge variant="subtle">{t("sectionCount", { count: members.length })}</Badge>
+                {allowed && (
+                  <Menu.Root
+                    lazyMount
+                    unmountOnExit
+                    onSelect={({ value }) => {
+                      if (value === "edit") setEditingCrop(crop);
+                      else moveSection(crop, value === "up" ? -1 : 1);
+                    }}
+                  >
+                    <Menu.Trigger asChild>
+                      <IconButton
+                        variant="ghost"
+                        size="sm"
+                        data-section-more={crop.id}
+                        aria-label={t("sectionMore", { section: cropName(crop) })}
+                        disabled={!connected}
+                      >
+                        ⋮
+                      </IconButton>
+                    </Menu.Trigger>
+                    <Portal>
+                      <Menu.Positioner>
+                        <Menu.Content data-section-more-items={crop.id}>
+                          <Menu.Item value="edit">{t("editCrop")}</Menu.Item>
+                          <Menu.Item value="up" disabled={crops[0]?.id === crop.id}>
+                            {t("moveUp")}
+                          </Menu.Item>
+                          <Menu.Item value="down" disabled={crops.at(-1)?.id === crop.id}>
+                            {t("moveDown")}
+                          </Menu.Item>
+                        </Menu.Content>
+                      </Menu.Positioner>
+                    </Portal>
+                  </Menu.Root>
+                )}
               </HStack>
               {allowed && members.length > 0 && (
                 <HStack gap="2">
@@ -409,7 +495,8 @@ export function Dashboard() {
                   colorPalette="blue"
                   data-water-confirm
                   onClick={() => {
-                    if (confirmWater) waterZones(confirmWater.zoneIds);
+                    if (confirmWater?.alarms) confirmAlarms(confirmWater.zoneIds);
+                    else if (confirmWater) waterZones(confirmWater.zoneIds);
                     setConfirmWater(null);
                   }}
                 >
@@ -428,7 +515,13 @@ export function Dashboard() {
         onSave={(times) => setAlarmTimes(editingTimes!.id, times)}
       />
 
-      <AddCropDialog open={addingCrop} onClose={() => setAddingCrop(false)} onAdd={handleAddCrop} />
+      <AddCropDialog open={addingCrop} onClose={() => setAddingCrop(false)} onSubmit={handleAddCrop} />
+      <AddCropDialog
+        open={!!editingCrop}
+        editing={editingCrop}
+        onClose={() => setEditingCrop(null)}
+        onSubmit={handleUpdateCrop}
+      />
 
       {/* These follow the pointer, so positions stay inline: as style props, every pixel would
           add a permanent CSS rule to Emotion's cache. */}

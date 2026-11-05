@@ -197,6 +197,9 @@ export function normalizeAlarmTimes(times: unknown): string[] | null {
   return unique.length <= MAX_ALARM_TIMES ? unique : null;
 }
 
+/** Seeded names. A crop still using one is shown translated; a renamed one shows its own name. */
+export const BUILTIN_CROP_NAMES: Record<string, string> = { bellflower: "도라지", rice: "벼", lettuce: "상추" };
+
 export const DEFAULT_ZONE_CROPS: Record<ZoneId, string> = {
   "zone-a": "bellflower",
   "zone-b": "bellflower",
@@ -248,6 +251,10 @@ export const HISTORY_ACTIONS = [
   "crop_add",
   "crop_remove",
   "alarm_times",
+  "crop_edit",
+  "crops_reorder",
+  "password_change",
+  "password_reset",
 ] as const;
 export type HistoryAction = (typeof HISTORY_ACTIONS)[number];
 
@@ -259,7 +266,11 @@ export interface HistoryDetail {
   actuator?: ManualActuator;
   on?: boolean;
   crop?: { id: string; name: string };
+  /** The name before a rename. */
+  previousName?: string;
   times?: string[];
+  /** The person whose password was reset. */
+  target?: string;
 }
 
 export interface HistoryEntry {
@@ -303,6 +314,8 @@ export interface ClientToServerEvents {
   "zones:move": (zoneIds: string[], cropId: string, callback: (result: ControlResult) => void) => void;
   "crop:add": (name: string, icon: CropIconKey, callback: (result: AddCropResult) => void) => void;
   "crop:schedule": (cropId: string, times: string[], callback: (result: ControlResult) => void) => void;
+  "crop:update": (cropId: string, name: string, icon: CropIconKey, callback: (result: AddCropResult) => void) => void;
+  "crops:reorder": (cropIds: string[], callback: (result: ControlResult) => void) => void;
   "crop:remove": (cropId: string, callback: (result: RemoveCropResult) => void) => void;
   "pump:stop": (zoneId: string, callback: (result: ControlResult) => void) => void;
   "actuator:set": (

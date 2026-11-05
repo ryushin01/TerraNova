@@ -24,6 +24,7 @@ let auth: Auth;
 let operatorCookie = "";
 const PASSWORD = "correct-horse-battery";
 const cycles: WateringCycle[] = [];
+const pushed: { subscription: { endpoint: string }; payload: string }[] = [];
 
 async function until<T>(find: () => T | undefined | null | false, timeoutMs = 8000): Promise<T> {
   const started = Date.now();
@@ -75,6 +76,14 @@ beforeAll(async () => {
     auth,
     sessionSweepMs: 100,
     defaultAlarmTimes: [],
+    push: {
+      publicKey: "test-public-key",
+      privateKey: "test-private-key",
+      subject: "https://example.com",
+      send: async (subscription, payload) => {
+        pushed.push({ subscription, payload });
+      },
+    },
     mqttUrl: `mqtt://127.0.0.1:${MQTT_PORT}`,
     httpPort: HTTP_PORT,
     allowedOrigins: [ORIGIN],
@@ -419,6 +428,51 @@ describe("control history", () => {
     await firstEntry("?action=actuator_set&zone=zone-e", (e) => e.actorName === "Temp Worker");
   });
 
+  test("crop edits and reordering are recorded with the old name", async () => {
+    const added = await new Promise<AddCropResult>((r) => socket.emit("crop:add", "수정전", "sprout", r));
+    if (!added.ok) throw new Error(added.error);
+    const updated = await new Promise<AddCropResult>((r) => socket.emit("crop:update", added.crop.id, "수정후", "tomato", r));
+    expect(updated).toMatchObject({ ok: true, crop: { name: "수정후", icon: "tomato" } });
+    const entry = await firstEntry("?action=crop_edit", (e) => e.detail.previousName === "수정전");
+    expect(entry.detail.crop?.name).toBe("수정후");
+
+    const crops = await new Promise<Crop[]>((resolve) => {
+      socket.once("crops:update", resolve);
+      socket.emit("crop:update", added.crop.id, "수정후", "corn", () => {});
+    });
+    const ids = crops.map((c) => c.id);
+    expect(await new Promise((r) => socket.emit("crops:reorder", [...ids].reverse(), r))).toEqual({ ok: true });
+    expect((await firstEntry("?action=crops_reorder", () => true)).result).toBe("ok");
+    expect(await new Promise((r) => socket.emit("crops:reorder", ["nope"], r))).toEqual({ ok: false, error: "invalid" });
+    await new Promise((r) => socket.emit("crops:reorder", ids, r));
+    await new Promise((r) => socket.emit("crop:remove", added.crop.id, r));
+  });
+
+  test("password changes record who and whose, and never the password", async () => {
+    const admin = await signIn("admin@terranova.test");
+    const made = await post("/api/auth/admin/create-user", { name: "Target", email: "target@terranova.test", password: PASSWORD, role: "operator" }, { cookie: admin });
+    const userId = ((await made.json()) as { user: { id: string } }).user.id;
+
+    const secret = "brand-new-password-77";
+    expect((await post("/api/auth/admin/set-user-password", { userId, newPassword: secret }, { cookie: admin })).status).toBe(200);
+    const reset = await firstEntry("?action=password_reset", (e) => e.detail.target === "Target" && e.result === "ok");
+    expect(reset.actorName).toBe("Admin");
+    expect(JSON.stringify(reset)).not.toContain(secret);
+
+    const target = await signIn("target@terranova.test", secret);
+    await post("/api/auth/admin/set-user-password", { userId, newPassword: "tried-by-non-admin-1" }, { cookie: target });
+    await firstEntry("?action=password_reset", (e) => e.actorName === "Target" && e.result === "forbidden");
+
+    expect((await post("/api/auth/change-password", { currentPassword: "wrong-password-1", newPassword: "another-password-2" }, { cookie: target })).status).not.toBe(200);
+    await firstEntry("?action=password_change", (e) => e.actorName === "Target" && e.result === "failed");
+
+    const changed = "changed-by-owner-3";
+    expect((await post("/api/auth/change-password", { currentPassword: secret, newPassword: changed, revokeOtherSessions: true }, { cookie: target })).status).toBe(200);
+    const own = await firstEntry("?action=password_change", (e) => e.actorName === "Target" && e.result === "ok");
+    expect(own.actorRole).toBe("operator");
+    expect(JSON.stringify(await entries("?limit=100"))).not.toContain(changed);
+  });
+
   test("only admins and operators can read it, and bad queries are refused", async () => {
     expect((await read("")).status).toBe(401);
     expect((await read("better-auth.session_token=forged.value")).status).toBe(401);
@@ -439,6 +493,31 @@ describe("control history", () => {
     expect(page.timeZone).toBe("Asia/Seoul");
     const next = (await (await read(operatorCookie, `?limit=2&before=${page.nextBefore}`)).json()) as HistoryPage;
     expect(next.entries[0]!.id).toBeLessThan(page.nextBefore!);
+  });
+});
+
+describe("push subscriptions", () => {
+  const FCM = "https://fcm.googleapis.com/fcm/send/e2e";
+  const body = { endpoint: FCM, keys: { p256dh: "p".repeat(20), auth: "a".repeat(10) }, locale: "ko" };
+  const anonymous = (path: string, method = "POST") =>
+    fetch(`${BASE}${path}`, { method, headers: jsonHeaders, ...(method === "POST" ? { body: JSON.stringify(body) } : {}) });
+
+  test("an alarm reaches a subscribed browser", async () => {
+    expect((await (await fetch(`${BASE}/api/push/key`, { headers: { origin: ORIGIN, cookie: operatorCookie } })).json() as { publicKey: string }).publicKey).toBe("test-public-key");
+    expect((await post("/api/push/subscribe", body, { cookie: operatorCookie })).status).toBe(204);
+    pushed.length = 0;
+    await triggerAlarm("zone-f");
+    await until(() => pushed.find((p) => p.subscription.endpoint === FCM && JSON.parse(p.payload).tag === "zone-F"));
+    expect((await post("/api/push/unsubscribe", { endpoint: FCM }, { cookie: operatorCookie })).status).toBe(204);
+  });
+
+  test("needs a signed-in person, a known origin and a real push service", async () => {
+    expect((await anonymous("/api/push/subscribe")).status).toBe(401);
+    expect((await anonymous("/api/push/key", "GET")).status).toBe(401);
+    expect((await fetch(`${BASE}/api/push/subscribe`, { method: "POST", headers: { "content-type": "application/json", cookie: operatorCookie }, body: JSON.stringify(body) })).status).toBe(403);
+    expect((await post("/api/push/subscribe", body, { cookie: operatorCookie, origin: "https://evil.example" })).status).toBe(403);
+    expect((await post("/api/push/subscribe", { ...body, endpoint: "https://169.254.169.254/x" }, { cookie: operatorCookie })).status).toBe(400);
+    expect((await post("/api/push/unsubscribe", { endpoint: "https://evil.example/x" }, { cookie: operatorCookie })).status).toBe(400);
   });
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Alert, Badge, Button, Flex, NativeSelect, Spinner, Stack, Table, Text } from "@chakra-ui/react";
-import { HISTORY_ACTIONS, ZONE_IDS, type HistoryEntry, type HistoryPage } from "@terranova/shared";
+import { BUILTIN_CROP_NAMES, HISTORY_ACTIONS, ZONE_IDS, type HistoryEntry, type HistoryPage } from "@terranova/shared";
 import { useFormatter, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
@@ -121,7 +121,9 @@ export function HistoryList() {
 
   const cropName = (crop?: { id: string; name: string }) => {
     if (!crop) return "";
-    return tCrops.has(crop.id as never) ? tCrops(crop.id as never) : crop.name;
+    return crop.name === BUILTIN_CROP_NAMES[crop.id] && tCrops.has(crop.id as never)
+      ? tCrops(crop.id as never)
+      : crop.name;
   };
 
   const describe = ({ action: kind, detail }: HistoryEntry) => {
@@ -133,6 +135,10 @@ export function HistoryList() {
       case "crop_add":
       case "crop_remove":
         return t(`actions.${kind}`, { name: cropName(detail.crop) });
+      case "crop_edit":
+        return t("actions.crop_edit", { previous: detail.previousName ?? cropName(detail.crop), name: cropName(detail.crop) });
+      case "password_reset":
+        return t("actions.password_reset", { name: detail.target ?? "–" });
       case "alarm_times":
         return t("actions.alarm_times", {
           section: cropName(detail.crop),

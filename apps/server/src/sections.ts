@@ -7,7 +7,7 @@ import {
   type Crop,
   type CropIconKey,
 } from "@terranova/shared";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, max } from "drizzle-orm";
 import type { Database } from "./db";
 import type { ZoneSchedule } from "./watering";
 import { crops, zoneSections } from "./db/schema";
@@ -22,7 +22,14 @@ function isUniqueViolation(error: unknown): boolean {
   return false;
 }
 
+function cleanName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const name = value.trim().replace(/\s+/g, " ");
+  return name && name.length <= MAX_CROP_NAME_LENGTH ? name : null;
+}
+
 export type AddCropOutcome = { crop: Crop } | { error: "invalid" | "duplicate" };
+export type UpdateCropOutcome = { crop: Crop; previousName: string } | { error: "invalid" | "duplicate" };
 export type RemoveCropOutcome = "ok" | "not_found" | "not_empty";
 
 /** Crops and which section each zone belongs to. A section is one crop's group of zones. */
@@ -41,7 +48,7 @@ export class ZoneSections {
   }
 
   async crops(): Promise<Crop[]> {
-    const rows = await this.db.select().from(crops).orderBy(asc(crops.createdAt), asc(crops.id));
+    const rows = await this.db.select().from(crops).orderBy(asc(crops.position), asc(crops.id));
     return rows.map((row) => this.toCrop(row));
   }
 
@@ -66,21 +73,51 @@ export class ZoneSections {
   }
 
   async addCrop(rawName: unknown, rawIcon: unknown): Promise<AddCropOutcome> {
-    if (typeof rawName !== "string") return { error: "invalid" };
-    const name = rawName.trim().replace(/\s+/g, " ");
-    if (!name || name.length > MAX_CROP_NAME_LENGTH) return { error: "invalid" };
+    const name = cleanName(rawName);
+    if (!name) return { error: "invalid" };
     const icon: CropIconKey = isCropIconKey(rawIcon) ? rawIcon : suggestCropIcon(name);
 
     try {
+      const [last] = await this.db.select({ position: max(crops.position) }).from(crops);
       const [row] = await this.db
         .insert(crops)
-        .values({ id: crypto.randomUUID(), name, icon })
+        .values({ id: crypto.randomUUID(), name, icon, position: (last?.position ?? 0) + 1 })
         .returning();
       return { crop: this.toCrop(row!) };
     } catch (error) {
       if (isUniqueViolation(error)) return { error: "duplicate" };
       throw error;
     }
+  }
+
+  /** Renames a crop or changes its icon. Its zones and alarm times stay as they are. */
+  async updateCrop(cropId: string, rawName: unknown, rawIcon: unknown): Promise<UpdateCropOutcome> {
+    const name = cleanName(rawName);
+    if (!name || !isCropIconKey(rawIcon)) return { error: "invalid" };
+    try {
+      const [previous] = await this.db.select({ name: crops.name }).from(crops).where(eq(crops.id, cropId));
+      if (!previous) return { error: "invalid" };
+      const [row] = await this.db.update(crops).set({ name, icon: rawIcon }).where(eq(crops.id, cropId)).returning();
+      return { crop: this.toCrop(row!), previousName: previous.name };
+    } catch (error) {
+      if (isUniqueViolation(error)) return { error: "duplicate" };
+      throw error;
+    }
+  }
+
+  /** Takes the full new order. Anything else is refused, so no section can drop out of the list. */
+  async reorder(cropIds: unknown): Promise<boolean> {
+    if (!Array.isArray(cropIds) || !cropIds.every((id) => typeof id === "string")) return false;
+    return this.db.transaction(async (tx) => {
+      const existing = await tx.select({ id: crops.id }).from(crops);
+      const known = new Set(existing.map(({ id }) => id));
+      if (cropIds.length !== known.size || new Set(cropIds).size !== known.size) return false;
+      if (!cropIds.every((id) => known.has(id))) return false;
+      for (const [position, id] of cropIds.entries()) {
+        await tx.update(crops).set({ position }).where(eq(crops.id, id));
+      }
+      return true;
+    });
   }
 
   /** Returns false if the times are invalid or the crop doesn't exist. */

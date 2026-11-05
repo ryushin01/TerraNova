@@ -118,6 +118,16 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
       request<AddCropResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crop:add", name, icon)),
     [request],
   );
+  const updateCrop = useCallback(
+    (cropId: string, name: string, icon: CropIconKey) =>
+      request<AddCropResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crop:update", cropId, name, icon)),
+    [request],
+  );
+  const reorderCrops = useCallback(
+    (cropIds: string[]) =>
+      request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crops:reorder", cropIds)),
+    [request],
+  );
   const setAlarmTimes = useCallback(
     (cropId: string, times: string[]) =>
       request<ControlResult>((s) => s.timeout(REQUEST_TIMEOUT_MS).emitWithAck("crop:schedule", cropId, times)),
@@ -141,5 +151,5 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
     [request],
   );
 
-  return { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, setAlarmTimes, removeCrop, stopPump, setActuator };
+  return { connection, crops, timeZone, sections, zones, cycles, confirmAlarm, startWatering, moveZones, addCrop, updateCrop, reorderCrops, setAlarmTimes, removeCrop, stopPump, setActuator };
 }

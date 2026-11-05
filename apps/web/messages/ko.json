@@ -112,7 +112,16 @@
     "cropRemoveFailed": "구역이 남아 있어 삭제할 수 없어요.",
     "noAlarmTimes": "알람 없음",
     "editAlarmTimes": "{section} 섹션 알람 시간 변경",
-    "change": "변경"
+    "change": "변경",
+    "confirmAll": "모두 확인하고 물 주기",
+    "confirmAllTitle": "{count}개 알람을 확인하고 물을 줄까요?",
+    "showAlarms": "개별 보기",
+    "hideAlarms": "접기",
+    "sectionMore": "{section} 섹션 메뉴",
+    "editCrop": "이름, 아이콘 수정",
+    "moveUp": "위로",
+    "moveDown": "아래로",
+    "cropUpdated": "{name} 섹션을 수정했어요."
   },
   "nav": {
     "users": "사용자 관리",
@@ -120,7 +129,13 @@
     "signOut": "로그아웃",
     "menu": "계정 메뉴",
     "history": "제어 이력",
-    "changePassword": "비밀번호 변경"
+    "changePassword": "비밀번호 변경",
+    "notificationsOn": "알림 켜기",
+    "notificationsOff": "알림 끄기",
+    "notificationsEnabled": "알림을 켰어요.",
+    "notificationsDisabled": "알림을 껐어요.",
+    "notificationsDenied": "브라우저 설정에서 알림을 허용해 주세요.",
+    "notificationsUnavailable": "이 환경에서는 알림을 켤 수 없어요. 브라우저가 신뢰하는 인증서가 필요해요."
   },
   "roles": {
     "admin": "관리자",
@@ -183,7 +198,9 @@
     "add": "추가",
     "cancel": "취소",
     "duplicate": "이미 있는 작물이에요.",
-    "failed": "추가하지 못했어요. 다시 시도해 주세요."
+    "failed": "추가하지 못했어요. 다시 시도해 주세요.",
+    "editTitle": "작물 수정",
+    "save": "저장"
   },
   "alarmTimes": {
     "title": "{section} 알람 시간",
@@ -225,7 +242,11 @@
       "crop_add": "{name} 작물 추가",
       "crop_remove": "{name} 작물 삭제",
       "alarm_times": "{section} 알람 시간 변경: {times}",
-      "noTimes": "없음"
+      "noTimes": "없음",
+      "crop_edit": "{previous} → {name} 작물 수정",
+      "crops_reorder": "섹션 순서 변경",
+      "password_change": "내 비밀번호 변경",
+      "password_reset": "{name} 비밀번호 재설정"
     },
     "filters": {
       "alarm_confirm": "알람 확인",
@@ -235,7 +256,11 @@
       "zones_move": "구역 이동",
       "crop_add": "작물 추가",
       "crop_remove": "작물 삭제",
-      "alarm_times": "알람 시간 변경"
+      "alarm_times": "알람 시간 변경",
+      "crop_edit": "작물 수정",
+      "crops_reorder": "섹션 순서 변경",
+      "password_change": "비밀번호 변경",
+      "password_reset": "비밀번호 재설정"
     },
     "results": {
       "ok": "성공",

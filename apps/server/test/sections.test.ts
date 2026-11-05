@@ -130,6 +130,57 @@ test("a move is all or nothing", async () => {
   expect(await sections.assignments()).toEqual(before);
 });
 
+describe("editing crops", () => {
+  test("renaming and changing the icon keep the zones and alarm times", async () => {
+    const s = new ZoneSections(database.db, ["08:00"]);
+    await s.setAlarmTimes("rice", ["05:00"]);
+    const outcome = await s.updateCrop("rice", "  찹쌀 벼 ", "corn");
+    expect(outcome).toMatchObject({ previousName: "벼", crop: { id: "rice", name: "찹쌀 벼", icon: "corn", alarmTimes: ["05:00"] } });
+    expect((await s.assignments())["zone-c"]).toBe("rice");
+  });
+
+  test("a name already in use is refused; keeping your own name is fine", async () => {
+    expect(await sections.updateCrop("rice", "도라지", "wheat")).toEqual({ error: "duplicate" });
+    expect(await sections.updateCrop("rice", "벼", "corn")).toMatchObject({ crop: { icon: "corn" } });
+  });
+
+  test.each([
+    ["rice", "", "wheat"],
+    ["rice", "가".repeat(31), "wheat"],
+    ["rice", "새이름", "not-an-icon"],
+    ["nope", "새이름", "wheat"],
+  ])("refuses %s, %s, %s", async (id, name, icon) => {
+    expect(await sections.updateCrop(id, name, icon)).toEqual({ error: "invalid" });
+    expect((await sections.crops()).find((c) => c.id === "rice")?.name).toBe("벼");
+  });
+});
+
+describe("section order", () => {
+  const order = async () => (await sections.crops()).map((c) => c.id);
+
+  test("new crops go last and the order can be changed", async () => {
+    const crop = await addedCrop("토마토");
+    expect(await order()).toEqual(["bellflower", "rice", "lettuce", crop.id]);
+    expect(await sections.reorder([crop.id, "lettuce", "rice", "bellflower"])).toBe(true);
+    expect(await order()).toEqual([crop.id, "lettuce", "rice", "bellflower"]);
+    const second = await addedCrop("감자");
+    expect((await order()).at(-1)).toBe(second.id);
+  });
+
+  test.each([
+    [["rice", "bellflower"]],
+    [["rice", "rice", "bellflower"]],
+    [["rice", "bellflower", "nope"]],
+    [["rice", "bellflower", "lettuce", "nope"]],
+    ["rice"],
+    [[1, 2, 3]],
+    [null],
+  ])("refuses %j and keeps the order", async (ids) => {
+    expect(await sections.reorder(ids)).toBe(false);
+    expect(await order()).toEqual(["bellflower", "rice", "lettuce"]);
+  });
+});
+
 test("a crop with zones cannot be removed; an empty one can", async () => {
   const crop = await addedCrop("토마토");
   await sections.move(["zone-a"], crop.id);

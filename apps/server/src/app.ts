@@ -26,6 +26,7 @@ import { Server, type Socket } from "socket.io";
 import { MIN_PASSWORD_LENGTH, type Auth } from "./auth";
 import type { Database } from "./db";
 import { user } from "./db/schema";
+import { PushNotifier, isPushEndpoint, parseSubscription, type PushConfig, type SendPush } from "./push";
 import { DeviceControls } from "./controls";
 import { ControlHistory, MAX_HISTORY_LIMIT, outcomeOf, type Actor, type HistoryEvent } from "./history";
 import { ZoneSections } from "./sections";
@@ -42,6 +43,8 @@ export interface AppOptions {
   allowedOrigins: string[];
   watering: WateringConfig;
   defaultAlarmTimes: readonly string[];
+  /** Web Push for alarms. Off when not set. */
+  push?: PushConfig & { send?: SendPush };
   staleAfterMs: number;
   tickMs: number;
   enableDevRoutes: boolean;
@@ -75,6 +78,7 @@ export async function startApp(options: AppOptions) {
   const sections = new ZoneSections(options.db, options.defaultAlarmTimes);
   await sections.init();
   const history = new ControlHistory(options.db);
+  const push = options.push ? new PushNotifier(options.db, options.push, options.push.send) : null;
 
   const { auth, db } = options;
   const authHandler = toNodeHandler(auth);
@@ -168,12 +172,59 @@ export async function startApp(options: AppOptions) {
     res.end(JSON.stringify({ ...page, timeZone: options.watering.timeZone } satisfies HistoryPage));
   };
 
+  const handlePush = async (req: IncomingMessage, res: ServerResponse, path: string) => {
+    if (!push) {
+      res.writeHead(404).end();
+      return;
+    }
+    const current = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+      query: { disableRefresh: true },
+    });
+    if (!current) {
+      res.writeHead(401).end();
+      return;
+    }
+    if (path === "/api/push/key" && req.method === "GET") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ publicKey: push.publicKey }));
+      return;
+    }
+    if (req.method !== "POST" || (path !== "/api/push/subscribe" && path !== "/api/push/unsubscribe")) {
+      res.writeHead(404).end();
+      return;
+    }
+    // A signed-in person's browser always sends Origin, so another site can't subscribe for them.
+    const { origin } = req.headers;
+    if (!origin || !isAllowedOrigin(origin)) {
+      res.writeHead(403).end();
+      return;
+    }
+    const body = await readJson(req);
+    if (path === "/api/push/subscribe") {
+      const subscription = parseSubscription(body);
+      if (!subscription) {
+        res.writeHead(400).end();
+        return;
+      }
+      await push.subscribe(current.user.id, subscription, String(body?.locale));
+    } else {
+      if (!isPushEndpoint(body?.endpoint)) {
+        res.writeHead(400).end();
+        return;
+      }
+      await push.unsubscribe(body.endpoint);
+    }
+    res.writeHead(204).end();
+  };
+
   const handleRequest = async (req: IncomingMessage, res: ServerResponse) => {
     const url = req.url ?? "";
     if (url.startsWith("/api/auth")) return authHandler(req, res);
     if (url === "/api/setup") return handleSetup(req, res);
     const parsed = new URL(url, "http://localhost");
     if (parsed.pathname === "/api/history") return handleHistory(req, res, parsed.searchParams);
+    if (parsed.pathname.startsWith("/api/push/")) return handlePush(req, res, parsed.pathname);
 
     const zoneId = /^\/dev\/alarms\/([\w-]+)$/.exec(url)?.[1];
     if (!options.enableDevRoutes || req.method !== "POST" || !zoneId) {
@@ -265,7 +316,10 @@ export async function startApp(options: AppOptions) {
     config: options.watering,
     schedule: () => sections.schedule(),
     publish,
-    onCycleChange: (cycle) => io.emit("cycle:update", cycle),
+    onCycleChange: (cycle) => {
+      io.emit("cycle:update", cycle);
+      push?.notify(cycle).catch((error) => console.error("[push] notify failed:", error));
+    },
   });
 
   const controls = new DeviceControls({
@@ -386,6 +440,51 @@ export async function startApp(options: AppOptions) {
           if ("error" in outcome) return { ok: false, error: outcome.error };
           io.emit("crops:update", await sections.crops());
           return { ok: true, crop: outcome.crop };
+        },
+      ).then(callback, () => callback({ ok: false, error: "internal" }));
+    });
+
+    socket.on("crop:update", (cropId, name, icon, callback) => {
+      if (typeof callback !== "function") return;
+      if (typeof cropId !== "string") {
+        callback({ ok: false, error: "invalid" });
+        return;
+      }
+      // Read first: afterwards the old name is gone. A refused edit records the name it tried.
+      const before = cropRef(cropId);
+      whenAllowed<AddCropResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        async (result) => [
+          {
+            action: "crop_edit",
+            detail: {
+              crop: { id: cropId, name: result.ok ? result.crop.name : String(name).slice(0, 60) },
+              previousName: (await before).name,
+            },
+            ...outcomeOf(result),
+          },
+        ],
+        async () => {
+          await before;
+          const outcome = await sections.updateCrop(cropId, name, icon);
+          if ("error" in outcome) return { ok: false, error: outcome.error };
+          io.emit("crops:update", await sections.crops());
+          return { ok: true, crop: outcome.crop };
+        },
+      ).then(callback, () => callback({ ok: false, error: "internal" }));
+    });
+
+    socket.on("crops:reorder", (cropIds, callback) => {
+      if (typeof callback !== "function") return;
+      whenAllowed<ControlResult>(
+        socket,
+        { ok: false, error: "forbidden" },
+        (result) => [{ action: "crops_reorder", ...outcomeOf(result) }],
+        async () => {
+          if (!(await sections.reorder(cropIds))) return { ok: false, error: "invalid" };
+          io.emit("crops:update", await sections.crops());
+          return { ok: true };
         },
       ).then(callback, () => callback({ ok: false, error: "internal" }));
     });

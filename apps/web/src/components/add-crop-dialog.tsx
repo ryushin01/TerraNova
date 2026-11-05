@@ -3,24 +3,34 @@
 import { Button, Center, Dialog, Field, Grid, Icon, IconButton, Input, Portal, Stack, Text } from "@chakra-ui/react";
 import { CROP_ICON_KEYS, suggestCropIcon, type AddCropResult, type CropIconKey } from "@terranova/shared";
 import { useTranslations } from "next-intl";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { CROP_ICONS } from "./crops";
 
 const MAX_NAME_LENGTH = 30;
 
 interface Props {
   open: boolean;
+  /** The crop being edited. Without one, this adds a new crop. */
+  editing?: { name: string; icon: CropIconKey } | null;
   onClose: () => void;
-  onAdd: (name: string, icon: CropIconKey) => Promise<AddCropResult>;
+  onSubmit: (name: string, icon: CropIconKey) => Promise<AddCropResult>;
 }
 
-export function AddCropDialog({ open, onClose, onAdd }: Props) {
+export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
   const t = useTranslations("addCrop");
   const [name, setName] = useState("");
   /** Null means the icon follows the name. It stops once someone picks one by hand. */
   const [chosenIcon, setChosenIcon] = useState<CropIconKey | null>(null);
   const [error, setError] = useState<"duplicate" | "other" | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // An edit starts from the crop's icon, so renaming doesn't swap it behind someone's back.
+  useEffect(() => {
+    if (!open) return;
+    setName(editing?.name ?? "");
+    setChosenIcon(editing?.icon ?? null);
+    setError(null);
+  }, [open, editing]);
 
   const icon = chosenIcon ?? suggestCropIcon(name);
   const trimmed = name.trim();
@@ -37,7 +47,7 @@ export function AddCropDialog({ open, onClose, onAdd }: Props) {
     if (!trimmed || saving) return;
     setSaving(true);
     setError(null);
-    const result = await onAdd(trimmed, icon);
+    const result = await onSubmit(trimmed, icon);
     setSaving(false);
     if (result.ok) close();
     else setError(result.error === "duplicate" ? "duplicate" : "other");
@@ -56,7 +66,7 @@ export function AddCropDialog({ open, onClose, onAdd }: Props) {
           <Dialog.Content mx="4">
             <form onSubmit={submit}>
               <Dialog.Header>
-                <Dialog.Title>{t("title")}</Dialog.Title>
+                <Dialog.Title>{t(editing ? "editTitle" : "title")}</Dialog.Title>
               </Dialog.Header>
               <Dialog.Body>
                 <Stack gap="4">
@@ -124,7 +134,7 @@ export function AddCropDialog({ open, onClose, onAdd }: Props) {
                   {t("cancel")}
                 </Button>
                 <Button type="submit" data-add-crop-submit loading={saving} disabled={!trimmed}>
-                  {t("add")}
+                  {t(editing ? "save" : "add")}
                 </Button>
               </Dialog.Footer>
             </form>

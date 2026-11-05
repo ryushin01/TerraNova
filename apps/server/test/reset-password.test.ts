@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createAuth } from "../src/auth";
 import { openDatabase } from "../src/db";
+import { ControlHistory } from "../src/history";
 
 const OLD_PASSWORD = "correct-horse-1";
 const EMAIL = "admin@terranova.test";
@@ -102,4 +103,10 @@ test("sets a temporary password, and the old one and old sessions stop working",
     auth.api.getSession({ headers: new Headers({ authorization: `Bearer ${session.token}` }) }),
   );
   expect(still).toBeNull();
+
+  const database = await openDatabase(dataDir);
+  const { entries } = await new ControlHistory(database.db).list({ limit: 5, action: "password_reset" });
+  await database.close();
+  expect(entries[0]).toMatchObject({ actorName: "복구 명령", detail: { target: "Admin" }, result: "ok" });
+  expect(JSON.stringify(entries)).not.toContain(password!);
 });

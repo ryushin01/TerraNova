@@ -7,6 +7,8 @@ import { useState } from "react";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { ChangePasswordDialog } from "./change-password-dialog";
+import { toaster } from "./toaster";
+import { usePush } from "./use-push";
 
 export function AppHeader({ title }: { title: string }) {
   const t = useTranslations("nav");
@@ -18,7 +20,22 @@ export function AppHeader({ title }: { title: string }) {
   const isAdmin = session?.user.role === "admin";
   const [changingPassword, setChangingPassword] = useState(false);
 
+  const push = usePush();
+
+  const togglePush = async () => {
+    if (push.enabled) {
+      await push.disable();
+      toaster.create({ type: "info", title: t("notificationsDisabled") });
+      return;
+    }
+    const outcome = await push.enable();
+    if (outcome === "ok") toaster.create({ type: "success", title: t("notificationsEnabled") });
+    else toaster.create({ type: "error", title: t(outcome === "denied" ? "notificationsDenied" : "notificationsUnavailable") });
+  };
+
   const signOut = async () => {
+    // Alarms shouldn't keep arriving on a browser after its user has signed out.
+    if (push.enabled) await push.disable();
     await authClient.signOut();
     router.replace("/login");
   };
@@ -55,6 +72,11 @@ export function AppHeader({ title }: { title: string }) {
                   {isAdmin && (
                     <Menu.Item value="users" asChild>
                       <Link href="/users">{t("users")}</Link>
+                    </Menu.Item>
+                  )}
+                  {push.supported && (
+                    <Menu.Item value="notifications" onClick={togglePush}>
+                      {t(push.enabled ? "notificationsOff" : "notificationsOn")}
                     </Menu.Item>
                   )}
                   <Menu.Item value="password" onClick={() => setChangingPassword(true)}>

@@ -43,6 +43,8 @@ export const crops = pgTable(
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     icon: text("icon").$type<CropIconKey>().notNull(),
+    /** Display order of sections. */
+    position: integer("position").notNull().default(0),
     /** Null follows the default alarm times. An empty list means no alarms. */
     alarmTimes: jsonb("alarm_times").$type<string[]>(),
     scheduleUpdatedAt: time("schedule_updated_at"),
@@ -131,4 +133,15 @@ export const verification = pgTable("verification", {
   expiresAt: time("expires_at").notNull(),
   createdAt: time("created_at").notNull().defaultNow(),
   updatedAt: time("updated_at").notNull().defaultNow(),
+});
+
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  endpoint: text("endpoint").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  locale: text("locale").notNull(),
+  createdAt: time("created_at").notNull().defaultNow(),
 });
