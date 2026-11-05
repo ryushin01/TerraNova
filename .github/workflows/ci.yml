@@ -1,0 +1,49 @@
+# 타입 검사, 단위 테스트, 빌드, 브라우저 테스트를 푸시와 PR마다 실행한다.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      # Bun 버전은 .bun-version을 따른다.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+
+      - run: bun install --frozen-lockfile
+
+      # 운영 의존성의 높음 이상 취약점만 막는다.
+      - run: bun audit --prod --audit-level=high
+
+      - run: bun run typecheck
+      - run: bun test
+      - run: bun run build
+
+      # 브라우저 테스트는 러너에 설치된 Chrome을 쓴다.
+      - run: google-chrome --version
+      - run: bun run test:e2e
+      - run: bun run test:lan
+
+      - name: 브라우저 테스트 실패 기록 보관
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results
+          path: e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 7
