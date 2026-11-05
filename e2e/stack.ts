@@ -57,9 +57,13 @@ export class Stack {
     private simulatorEnv: Env = {},
   ) {}
 
+  get dataDir(): string {
+    return join(this.dataRoot, "db");
+  }
+
   async startServer(env: Env = this.serverEnv): Promise<void> {
     this.serverEnv = env;
-    this.server = run("apps/server", { DATA_DIR: join(this.dataRoot, "db"), WATERING_TIMES: "", ...env });
+    this.server = run("apps/server", { DATA_DIR: this.dataDir, WATERING_TIMES: "", ...env });
     await backendUp();
   }
 

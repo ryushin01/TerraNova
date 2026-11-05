@@ -286,6 +286,29 @@ describe("access", () => {
     expect((await fetch(`${BASE}/api/auth/admin/list-users`, { headers: { origin: ORIGIN, cookie: operatorCookie } })).status).toBe(403);
   });
 
+  test("passwords reset by an admin follow the same length rule", async () => {
+    const admin = await signIn("admin@terranova.test");
+    const made = await post("/api/auth/admin/create-user", { name: "P", email: "p@terranova.test", password: PASSWORD, role: "viewer" }, { cookie: admin });
+    const userId = ((await made.json()) as { user: { id: string } }).user.id;
+    expect((await post("/api/auth/admin/set-user-password", { userId, newPassword: "short" }, { cookie: admin })).status).toBe(400);
+    expect((await post("/api/auth/sign-in/email", { email: "p@terranova.test", password: PASSWORD })).status).toBe(200);
+    expect((await post("/api/auth/admin/set-user-password", { userId, newPassword: "another-password-1" }, { cookie: admin })).status).toBe(200);
+    expect((await post("/api/auth/sign-in/email", { email: "p@terranova.test", password: PASSWORD })).status).toBe(401);
+    expect((await post("/api/auth/sign-in/email", { email: "p@terranova.test", password: "another-password-1" })).status).toBe(200);
+  });
+
+  test("changing your own password needs the current one and a real new one", async () => {
+    const admin = await signIn("admin@terranova.test");
+    await post("/api/auth/admin/create-user", { name: "C", email: "c@terranova.test", password: PASSWORD, role: "viewer" }, { cookie: admin });
+    const cookie = await signIn("c@terranova.test");
+    const change = (currentPassword: string, newPassword: string) =>
+      post("/api/auth/change-password", { currentPassword, newPassword }, { cookie });
+    expect((await change("wrong-password-1", "another-password-1")).status).not.toBe(200);
+    expect((await change(PASSWORD, "short")).status).not.toBe(200);
+    expect((await change(PASSWORD, "another-password-1")).status).toBe(200);
+    expect((await post("/api/auth/sign-in/email", { email: "c@terranova.test", password: "another-password-1" })).status).toBe(200);
+  });
+
   test("admin-created accounts must have a real password", async () => {
     const admin = await signIn("admin@terranova.test");
     const response = await post("/api/auth/admin/create-user", { name: "Z", email: "z@terranova.test", password: "short", role: "viewer" }, { cookie: admin });

@@ -3,8 +3,10 @@
 import { Button, Flex, Heading, HStack, Link as ChakraLink, Menu, Portal } from "@chakra-ui/react";
 import { canControl } from "@terranova/shared";
 import { useLocale, useTranslations } from "next-intl";
+import { useState } from "react";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
+import { ChangePasswordDialog } from "./change-password-dialog";
 
 export function AppHeader({ title }: { title: string }) {
   const t = useTranslations("nav");
@@ -14,6 +16,7 @@ export function AppHeader({ title }: { title: string }) {
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const isAdmin = session?.user.role === "admin";
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const signOut = async () => {
     await authClient.signOut();
@@ -54,6 +57,9 @@ export function AppHeader({ title }: { title: string }) {
                       <Link href="/users">{t("users")}</Link>
                     </Menu.Item>
                   )}
+                  <Menu.Item value="password" onClick={() => setChangingPassword(true)}>
+                    {t("changePassword")}
+                  </Menu.Item>
                   <Menu.Item value="sign-out" onClick={signOut}>
                     {t("signOut")}
                   </Menu.Item>
@@ -63,6 +69,7 @@ export function AppHeader({ title }: { title: string }) {
           </Menu.Root>
         )}
       </HStack>
+      <ChangePasswordDialog open={changingPassword} onClose={() => setChangingPassword(false)} />
     </Flex>
   );
 }

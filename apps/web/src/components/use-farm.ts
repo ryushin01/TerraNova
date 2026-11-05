@@ -16,6 +16,7 @@ import {
 } from "@terranova/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
+import { authClient } from "@/lib/auth-client";
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -51,8 +52,13 @@ export function useFarm(onSignedOut: () => void, onCycleUpdate?: (cycle: Waterin
     socket.on("connect", () => setConnection("connected"));
     socket.on("disconnect", (reason) => {
       setConnection("disconnected");
-      // The server only hangs up deliberately when the session is no longer valid.
-      if (reason === "io server disconnect") onSignedOutRef.current();
+      if (reason !== "io server disconnect") return;
+      // The server hung up on this connection's session. Changing your own password replaces the
+      // session, so if a valid one exists, reconnect with it instead of signing out.
+      authClient
+        .getSession()
+        .then(({ data }) => (data ? socket.connect() : onSignedOutRef.current()))
+        .catch(() => socket.connect());
     });
     socket.on("connect_error", (error) => {
       setConnection("disconnected");

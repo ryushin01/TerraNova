@@ -7,6 +7,7 @@ import {
   Card,
   Dialog,
   Field,
+  HStack,
   Input,
   NativeSelect,
   Portal,
@@ -71,6 +72,8 @@ export function UsersAdmin() {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<UserRow | null>(null);
+  const [resetting, setResetting] = useState<UserRow | null>(null);
+  const [resetBusy, setResetBusy] = useState(false);
   const isAdmin = session?.user.role === "admin";
 
   const load = useCallback(async () => {
@@ -120,6 +123,23 @@ export function UsersAdmin() {
       result.error ? { type: "error", title: t("failed") } : { type: "success", title: t("updated") },
     );
     await load();
+  };
+
+  const resetPassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!resetting) return;
+    const newPassword = String(new FormData(event.currentTarget).get("new-password") ?? "");
+    setResetBusy(true);
+    const result = await authClient.admin.setUserPassword({ userId: resetting.id, newPassword });
+    // The old password may be why this was needed, so nobody keeps a sign-in made with it.
+    const revoked = result.error ? null : await authClient.admin.revokeUserSessions({ userId: resetting.id });
+    setResetBusy(false);
+    if (result.error || revoked?.error) {
+      toaster.create({ type: "error", title: t("resetFailed") });
+      return;
+    }
+    toaster.create({ type: "success", title: t("resetDone") });
+    setResetting(null);
   };
 
   const remove = async () => {
@@ -205,11 +225,16 @@ export function UsersAdmin() {
                         />
                       )}
                     </Table.Cell>
-                    <Table.Cell textAlign="end">
+                    <Table.Cell textAlign="end" whiteSpace="nowrap">
                       {!isMe && (
-                        <Button size="sm" variant="outline" colorPalette="red" onClick={() => setRemoving(user)}>
-                          {t("remove")}
-                        </Button>
+                        <HStack gap="2" justify="flex-end">
+                          <Button size="sm" variant="outline" onClick={() => setResetting(user)}>
+                            {t("resetPassword")}
+                          </Button>
+                          <Button size="sm" variant="outline" colorPalette="red" onClick={() => setRemoving(user)}>
+                            {t("remove")}
+                          </Button>
+                        </HStack>
                       )}
                     </Table.Cell>
                   </Table.Row>
@@ -219,6 +244,41 @@ export function UsersAdmin() {
           </Table.Root>
         </Table.ScrollArea>
       )}
+
+      <Dialog.Root
+        open={!!resetting}
+        onOpenChange={(event) => {
+          if (!event.open) setResetting(null);
+        }}
+      >
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content mx="4">
+              <form onSubmit={resetPassword}>
+                <Dialog.Header>
+                  <Dialog.Title>{t("resetTitle", { name: resetting?.name ?? "" })}</Dialog.Title>
+                </Dialog.Header>
+                <Dialog.Body>
+                  <Field.Root required>
+                    <Field.Label>{t("resetLabel")}</Field.Label>
+                    <Input name="new-password" type="password" autoComplete="new-password" minLength={8} size="lg" />
+                    <Field.HelperText>{t("resetHelp")}</Field.HelperText>
+                  </Field.Root>
+                </Dialog.Body>
+                <Dialog.Footer>
+                  <Button type="button" variant="outline" onClick={() => setResetting(null)}>
+                    {t("cancel")}
+                  </Button>
+                  <Button type="submit" data-reset-password-submit loading={resetBusy}>
+                    {t("resetSubmit")}
+                  </Button>
+                </Dialog.Footer>
+              </form>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
 
       <Dialog.Root
         role="alertdialog"

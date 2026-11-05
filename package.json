@@ -18,7 +18,8 @@
     "memory:browser": "bun run --filter @terranova/e2e memory:browser",
     "lan": "bun run build && bun apps/lan/src/index.ts",
     "test:lan": "bun run --filter @terranova/e2e test:lan",
-    "docs:screenshots": "bun run --filter @terranova/e2e docs:screenshots"
+    "docs:screenshots": "bun run --filter @terranova/e2e docs:screenshots",
+    "admin:reset-password": "bun apps/server/src/reset-password.ts"
   },
   "devDependencies": {
     "@types/bun": "^1.4.4",

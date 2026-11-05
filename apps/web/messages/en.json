@@ -119,7 +119,8 @@
     "dashboard": "Zones",
     "signOut": "Sign out",
     "menu": "Account menu",
-    "history": "Control history"
+    "history": "Control history",
+    "changePassword": "Change password"
   },
   "roles": {
     "admin": "Admin",
@@ -158,7 +159,14 @@
     "confirmRemoveTitle": "Remove this user?",
     "confirmRemoveBody": "Removing {name} signs them out immediately.",
     "loading": "Loading",
-    "roleHelp": "Operators can control devices. Viewers can only watch."
+    "roleHelp": "Operators can control devices. Viewers can only watch.",
+    "resetPassword": "Reset password",
+    "resetTitle": "Reset password for {name}",
+    "resetLabel": "New password",
+    "resetHelp": "Use at least 8 characters. All of this user's sign-ins will end.",
+    "resetSubmit": "Reset",
+    "resetDone": "Password reset.",
+    "resetFailed": "Couldn't reset the password. Please try again."
   },
   "crops": {
     "bellflower": "Bellflower",
@@ -245,5 +253,18 @@
       "device_failed": "Device failed",
       "internal": "Error"
     }
+  },
+  "password": {
+    "changeTitle": "Change password",
+    "current": "Current password",
+    "new": "New password",
+    "confirm": "Confirm new password",
+    "help": "Use at least 8 characters. Sign-ins on other devices will end.",
+    "save": "Change",
+    "cancel": "Cancel",
+    "mismatch": "The new passwords don't match.",
+    "changeFailed": "The current password is wrong, or the new one can't be used.",
+    "tooMany": "Too many attempts. Please try again shortly.",
+    "changed": "Password changed."
   }
 }
