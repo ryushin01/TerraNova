@@ -110,6 +110,16 @@ test.describe("README screenshots", () => {
     });
   });
 
+  test.describe("history", () => {
+    test.use({ viewport: { width: 1440, height: 760 }, deviceScaleFactor: 1 });
+
+    test("control history", async ({ page }) => {
+      await page.goto("/ko/history");
+      await expect(page.locator("[data-history-row]").first()).toBeVisible();
+      await shoot(page, "history");
+    });
+  });
+
   test.describe("phone", () => {
     test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
 
