@@ -81,7 +81,7 @@ export function CropSection({
       borderRadius="lg"
       borderWidth="2px"
       borderStyle="dashed"
-      borderColor={isDropTarget ? "copper" : dragging ? "brand.emphasized" : "transparent"}
+      borderColor={isDropTarget ? "ink" : dragging ? "brand.emphasized" : "transparent"}
       bg={isDropTarget ? "brand.subtle" : undefined}
     >
       <Flex align="center" justify="space-between" gap="2" wrap="wrap">

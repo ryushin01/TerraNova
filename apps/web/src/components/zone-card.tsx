@@ -206,7 +206,7 @@ export function ZoneCard({
   return (
     <Card.Root
       variant="elevated"
-      boxShadow={selected ? "inset 0 0 0 2px var(--chakra-colors-copper)" : "none"}
+      boxShadow={selected ? "inset 0 0 0 2px var(--chakra-colors-ink)" : "none"}
       border="none"
       borderRadius="0"
       style={{ clipPath: chamfer() }}

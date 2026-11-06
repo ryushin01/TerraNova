@@ -422,8 +422,8 @@ export function Dashboard() {
           zIndex="overlay"
           pointerEvents="none"
           borderWidth="1px"
-          borderColor="copper"
-          bg="copper/15"
+          borderColor="ink"
+          bg="ink/15"
           style={marquee}
         />
       )}

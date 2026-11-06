@@ -23,7 +23,7 @@ export function SummaryTile({
       style={{ clipPath: chamfer() }}
     >
       <HStack gap="2" color={dark ? "inkContrast" : "fg.muted"}>
-        <Icon as={icon} color={dark ? "inkContrast" : "copper"} aria-hidden />
+        <Icon as={icon} color={dark ? "inkContrast" : "ink"} aria-hidden />
         <Text textStyle="sm" fontWeight="bold" truncate>
           {label}
         </Text>

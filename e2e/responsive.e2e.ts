@@ -33,6 +33,13 @@ test.describe("screen sizes and languages", () => {
 
       await open.tap();
       const drawer = page.getByRole("dialog");
+      // The drawer stays dark in either theme, so a theme-colored focus ring would vanish on it.
+      const themeButton = drawer.getByRole("button", { name: "다크 모드" });
+      await themeButton.focus();
+      await page.keyboard.press("Shift+Tab");
+      await page.keyboard.press("Tab");
+      await expect(themeButton).toBeFocused();
+      await expect(themeButton).toHaveCSS("outline-color", "rgb(243, 239, 238)");
       await drawer.getByRole("button", { name: "다크 모드" }).tap();
       await expect(page.locator("html")).toHaveClass(/dark/);
       await expect(drawer.getByRole("button", { name: "라이트 모드" })).toBeVisible();

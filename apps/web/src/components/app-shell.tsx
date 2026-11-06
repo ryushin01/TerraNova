@@ -59,6 +59,7 @@ const DRAWER_ACTION = {
   w: "full",
   minH: "11",
   _hover: { bg: "whiteAlpha.200" },
+  focusRingColor: "#f3efee",
 } as const;
 
 function NavLinks({ direction, onNavigate }: { direction: "row" | "column"; onNavigate?: () => void }) {
@@ -92,11 +93,11 @@ function NavLinks({ direction, onNavigate }: { direction: "row" | "column"; onNa
               textDecoration="none"
               color={direction === "column" ? "#f3efee" : "ink"}
               fontSize={direction === "column" ? "xl" : "sm"}
-              _hover={{ color: "copper", textDecoration: "none" }}
-              _focusVisible={{ outline: "2px solid", outlineColor: "copper", outlineOffset: "2px" }}
+              _hover={{ textDecoration: "underline" }}
+              _focusVisible={{ outline: "2px solid", outlineColor: "currentColor", outlineOffset: "2px" }}
             >
               <Link href={item.href} aria-current={active ? "page" : undefined} onClick={onNavigate}>
-                {active && <Box boxSize="1.5" borderRadius="full" bg="copper" aria-hidden />}
+                {active && <Box boxSize="1.5" borderRadius="full" bg="currentColor" aria-hidden />}
                 {item.label}
               </Link>
             </ChakraLink>
@@ -193,7 +194,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
                 <Button
                   bg="surface"
                   color="ink"
-                  _hover={{ bg: "surface", color: "copper" }}
+                  _hover={{ bg: "brand.subtle" }}
                   size="sm"
                   minH="11"
                   pl="2"
@@ -207,7 +208,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
                   <Text hideBelow="sm" truncate>
                     {session.user.name}
                   </Text>
-                  <Icon as={LuChevronDown} color="copper" aria-hidden />
+                  <Icon as={LuChevronDown} aria-hidden />
                 </Button>
               </Menu.Trigger>
               <Portal>

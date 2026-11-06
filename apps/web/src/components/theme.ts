@@ -43,9 +43,7 @@ export const system = createSystem(
           surface: { value: { _light: "white", _dark: "#211f1e" } },
           ink: { value: { _light: "#181818", _dark: "#f3efee" } },
           inkContrast: { value: { _light: "white", _dark: "#181818" } },
-          copper: { value: { _light: "#9e653f", _dark: "#d69468" } },
           chart: {
-            line: { value: "#b85a1f" },
             grid: { value: { _light: "#ece6e4", _dark: "#37332f" } },
             axis: { value: { _light: "#8a8381", _dark: "#9c9591" } },
           },
@@ -57,7 +55,7 @@ export const system = createSystem(
             muted: { value: { _light: "#e4d9d4", _dark: "#37332f" } },
             emphasized: { value: { _light: "#d6c7c0", _dark: "#46413c" } },
             solid: { value: "{colors.ink}" },
-            focusRing: { value: "{colors.copper}" },
+            focusRing: { value: "{colors.ink}" },
           },
           // One place for the field's meaning, used by both the cells and the legend.
           field: {

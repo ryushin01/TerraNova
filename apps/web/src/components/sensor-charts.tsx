@@ -23,8 +23,7 @@ const RANGES = Object.keys(SENSOR_RANGES) as SensorRange[];
 const REFRESH_MS = 30_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// A more saturated copper than the accent, which reads as gray at the width of a line.
-const LINE_COLOR = "var(--chakra-colors-chart-line)";
+const LINE_COLOR = "var(--chakra-colors-ink)";
 const GRID_COLOR = "var(--chakra-colors-chart-grid)";
 const AXIS_COLOR = "var(--chakra-colors-chart-axis)";
 
