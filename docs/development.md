@@ -104,6 +104,6 @@ bun run memory:web [라운드]             # Next.js 서버에 페이지 요청�
 
 ## 사용한 그래픽과 글꼴
 
-- 작물 아이콘: [Fluent Emoji](https://github.com/microsoft/fluentui-emoji) (MIT). `apps/web/scripts/crop-icons.ts`로 `public/crops`에 생성합니다.
+- 작물 아이콘: [Fluent Emoji High Contrast](https://github.com/microsoft/fluentui-emoji) (MIT). 호박만 직접 그렸고, `apps/web/scripts/crop-icons.ts`로 `public/crops`와 설치 아이콘 `public/app-icon.svg`를 생성합니다.
 - 화면 아이콘: [Lucide](https://lucide.dev) (ISC)
 - 글꼴: [Pretendard](https://github.com/orioncactus/pretendard) (OFL-1.1)

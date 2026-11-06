@@ -77,6 +77,6 @@ test.describe("account changes and appearance", () => {
     const response = await request.get("/manifest.webmanifest");
     expect(response.ok()).toBe(true);
     expect((await response.json()).name).toBe("TerraNova");
-    expect((await request.get("/crops/seedling.svg")).ok()).toBe(true);
+    expect((await request.get("/app-icon.svg")).ok()).toBe(true);
   });
 });

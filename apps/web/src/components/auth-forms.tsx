@@ -39,7 +39,7 @@ function AuthCard({ title, description, children }: { title: string; description
             <path
               d="M0 0 H72 L100 28 V100 H26 L0 76 Z"
               fill="none"
-              stroke="var(--chakra-colors-copper)"
+              stroke="var(--chakra-colors-ink)"
               strokeWidth="1.5"
               vectorEffect="non-scaling-stroke"
             />

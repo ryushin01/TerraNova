@@ -2,8 +2,8 @@ import { Box, type BoxProps } from "@chakra-ui/react";
 import { CROP_ICON_KEYS, type CropIconKey } from "@terranova/shared";
 
 /**
- * Artwork for each crop icon, from Microsoft's Fluent Emoji (MIT), kept in public/crops. Crops
- * without a close match share the nearest one. `scripts/crop-icons.ts` regenerates the files.
+ * Artwork for each crop icon, from Microsoft's Fluent Emoji High Contrast (MIT), kept in public/crops.
+ * Crops without a close match share the nearest one. `scripts/crop-icons.ts` regenerates the files.
  */
 export const CROP_ICON_FILES: Record<CropIconKey, string> = {
   sprout: "seedling",
@@ -30,7 +30,7 @@ export const CROP_ICON_FILES: Record<CropIconKey, string> = {
   cucumber: "cucumber",
   bellPepper: "bell-pepper",
   eggplant: "eggplant",
-  pumpkin: "jack-o-lantern",
+  pumpkin: "pumpkin",
   watermelon: "watermelon",
   melon: "melon",
   strawberry: "strawberry",
@@ -73,9 +73,10 @@ export const CROP_ICON_CHOICES = CROP_ICON_KEYS.filter(
 export function CropIcon({ icon, ...props }: { icon: CropIconKey } & BoxProps) {
   return (
     <Box asChild flexShrink={0} pointerEvents="none" userSelect="none" {...props}>
-      {/* Decorative: the crop's name is always written beside it. */}
-      {/* biome-ignore lint/performance/noImgElement: Small local SVGs, which next/image wouldn't improve. */}
-      <img src={`/crops/${CROP_ICON_FILES[icon]}.svg`} alt="" draggable={false} />
+      {/* Decorative: the crop's name is always written beside it. <use> keeps the text color. */}
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <use href={`/crops/${CROP_ICON_FILES[icon]}.svg#icon`} />
+      </svg>
     </Box>
   );
 }
