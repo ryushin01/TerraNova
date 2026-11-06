@@ -59,6 +59,7 @@ const DRAWER_ACTION = {
   w: "full",
   minH: "11",
   _hover: { bg: "whiteAlpha.200" },
+  focusRingColor: "#f3efee",
 } as const;
 
 function NavLinks({ direction, onNavigate }: { direction: "row" | "column"; onNavigate?: () => void }) {
