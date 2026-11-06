@@ -75,6 +75,9 @@ test.describe("sections and crops", () => {
     const name = page.locator('[name="name"]');
     const preview = page.locator("[data-preview-icon]");
 
+    await expect(preview).toHaveAttribute("data-preview-icon", "tomato");
+    await expect(page.locator("[data-preview-name]")).toHaveText("예: 토마토");
+
     await name.fill("방울토마토");
     await expect(preview).toHaveAttribute("data-preview-icon", "tomato");
     await expect(page.locator("[data-preview-name]")).toHaveText("방울토마토");
