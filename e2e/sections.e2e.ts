@@ -82,8 +82,13 @@ test.describe("sections and crops", () => {
     await name.fill("처음보는작물");
     await expect(preview).toHaveAttribute("data-preview-icon", "sprout");
 
-    await page.locator('[data-icon-option="cherry"]').hover();
-    await expect(page.getByRole("tooltip")).toHaveText("체리");
+    // The first row, because scrolling to an icon cancels a tooltip that is still opening.
+    await page.locator('[data-icon-option="sprout"]').hover();
+    await expect(page.getByRole("tooltip")).toHaveText("새싹");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+    await expect(name).toHaveValue("처음보는작물");
+
     await page.locator('[data-icon-option="cherry"]').click();
     await expect(preview).toHaveAttribute("data-preview-icon", "cherry");
     await expect(page.locator("[data-chosen-icon-name]")).toContainText("체리");

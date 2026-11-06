@@ -3,7 +3,7 @@
 import { Button, Center, Dialog, Field, Grid, IconButton, Input, Portal, Stack, Text, Tooltip } from "@chakra-ui/react";
 import { type AddCropResult, type CropIconKey, suggestCropIcon } from "@terranova/shared";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { CROP_ICON_CHOICES, CropIcon } from "./crops";
 
@@ -34,6 +34,7 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
   /** Null means the icon follows the name. It stops once someone picks one by hand. */
   const [chosenIcon, setChosenIcon] = useState<CropIconKey | null>(null);
   const error = errors.name?.message;
+  const openTooltip = useRef<CropIconKey | null>(null);
 
   // An edit starts from the crop's icon, so renaming doesn't swap it behind someone's back.
   useEffect(() => {
@@ -62,6 +63,10 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
   return (
     <Dialog.Root
       open={open}
+      // Escape closes an open tooltip first, so it can't throw away what was typed.
+      onEscapeKeyDown={(event) => {
+        if (openTooltip.current) event.preventDefault();
+      }}
       onOpenChange={(event) => {
         if (!event.open) close();
       }}
@@ -118,7 +123,18 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
                       borderRadius="md"
                     >
                       {CROP_ICON_CHOICES.map((key) => (
-                        <Tooltip.Root key={key} openDelay={200} closeDelay={0} lazyMount unmountOnExit>
+                        <Tooltip.Root
+                          key={key}
+                          openDelay={200}
+                          closeDelay={150}
+                          interactive
+                          lazyMount
+                          unmountOnExit
+                          onOpenChange={(event) => {
+                            if (event.open) openTooltip.current = key;
+                            else if (openTooltip.current === key) openTooltip.current = null;
+                          }}
+                        >
                           <Tooltip.Trigger asChild>
                             <IconButton
                               type="button"

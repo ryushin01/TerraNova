@@ -249,11 +249,11 @@ export function ZoneCard({
                 data-selected-mark
               >
                 <Icon as={LuCheck} boxSize="3.5" aria-hidden />
-                <VisuallyHidden>{t("zoneSelected")}</VisuallyHidden>
               </Flex>
             )}
             <Card.Title fontWeight="800" fontSize="lg" letterSpacing="-0.01em">
               {t("zone", { id: zoneName })}
+              {selected && <VisuallyHidden> {t("zoneSelected")}</VisuallyHidden>}
             </Card.Title>
             <Badge colorPalette={palette} variant={palette === "gray" ? "subtle" : "solid"}>
               {stateLabel}
