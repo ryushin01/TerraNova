@@ -39,7 +39,7 @@ test.describe("screen sizes and languages", () => {
       await page.keyboard.press("Shift+Tab");
       await page.keyboard.press("Tab");
       await expect(themeButton).toBeFocused();
-      await expect(themeButton).toHaveCSS("outline-color", "rgb(243, 239, 238)");
+      await expect(themeButton).toHaveCSS("outline-color", "rgb(242, 242, 242)");
       await drawer.getByRole("button", { name: "다크 모드" }).tap();
       await expect(page.locator("html")).toHaveClass(/dark/);
       await expect(drawer.getByRole("button", { name: "라이트 모드" })).toBeVisible();
