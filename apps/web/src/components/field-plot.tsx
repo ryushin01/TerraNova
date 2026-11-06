@@ -84,7 +84,7 @@ export const FieldPlot = memo(function FieldPlot({ look, label, icon }: FieldPlo
           justifyContent="center"
           style={animation ? { animationDelay: `${cell.delayMs}ms` } : undefined}
         >
-          {icon && <CropIcon icon={icon} boxSize="70%" />}
+          {icon && <CropIcon icon={icon} boxSize="52%" opacity={0.75} />}
         </Box>
       ))}
     </Grid>

@@ -82,14 +82,39 @@ test.describe("sections and crops", () => {
     await name.fill("처음보는작물");
     await expect(preview).toHaveAttribute("data-preview-icon", "sprout");
 
+    // The first row, because scrolling to an icon cancels a tooltip that is still opening.
+    await page.locator('[data-icon-option="sprout"]').hover();
+    await expect(page.getByRole("tooltip")).toHaveText("새싹");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+    await expect(name).toHaveValue("처음보는작물");
+
     await page.locator('[data-icon-option="cherry"]').click();
     await expect(preview).toHaveAttribute("data-preview-icon", "cherry");
+    await expect(page.locator("[data-chosen-icon-name]")).toContainText("체리");
     await name.fill("도라지");
     await expect(preview).toHaveAttribute("data-preview-icon", "cherry");
 
     await page.locator("[data-add-crop-submit]").click();
     await expect(page.getByText("이미 있는 작물이에요")).toBeVisible();
     await page.getByRole("dialog").getByRole("button", { name: "취소" }).click();
+
+    // Saving with a tooltip open must not leave Escape blocked the next time the dialog opens.
+    await page.locator("[data-add-crop]").click();
+    await name.fill("툴팁작물");
+    const sprout = page.locator('[data-icon-option="sprout"]');
+    await expect(async () => {
+      await sprout.hover({ position: { x: 8, y: 8 } });
+      await sprout.hover({ position: { x: 16, y: 16 } });
+      await expect(page.getByRole("tooltip")).toHaveText("새싹", { timeout: 1000 });
+    }).toPass();
+    await name.press("Enter");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.mouse.move(0, 0);
+    await page.locator("[data-add-crop]").click();
+    await expect(name).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
 
     await page.locator("[data-add-crop]").click();
     await name.fill("옥수수");
