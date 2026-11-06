@@ -44,6 +44,7 @@ test.describe("drag selection", () => {
     await expect.poll(() => selected(page)).toBe("zone-a,zone-b");
     await expect(page.locator("[data-marquee]")).toHaveCount(0);
     await expect(page.locator("[data-selection-count]")).toContainText("2");
+    await expect(page.locator("[data-selected-mark]")).toHaveCount(2);
     expect(await page.evaluate(() => getSelection()?.toString())).toBe("");
 
     await page.keyboard.press("Escape");

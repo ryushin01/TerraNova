@@ -264,13 +264,17 @@ export function Dashboard() {
 
       <SimpleGrid columns={{ base: 2, md: 4 }} gap="2">
         <SummaryTile
-          dark
           icon={LuWifi}
           label={t("summary.online")}
           value={`${ZONE_IDS.filter((id) => zones[id]?.online).length} / ${ZONE_IDS.length}`}
         />
         <SummaryTile icon={LuDroplets} label={t("summary.watering")} value={String(pumping.length)} />
-        <SummaryTile icon={LuBellRing} label={t("summary.alarms")} value={String(alarms.length)} />
+        <SummaryTile
+          dark={alarms.length > 0}
+          icon={LuBellRing}
+          label={t("summary.alarms")}
+          value={String(alarms.length)}
+        />
         <SummaryTile icon={LuSprout} label={t("summary.soil")} value={averageSoil} />
       </SimpleGrid>
 
@@ -422,8 +426,8 @@ export function Dashboard() {
           zIndex="overlay"
           pointerEvents="none"
           borderWidth="1px"
-          borderColor="ink"
-          bg="ink/15"
+          borderColor="ink/40"
+          bg="ink/10"
           style={marquee}
         />
       )}

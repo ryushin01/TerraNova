@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Center, Dialog, Field, Grid, IconButton, Input, Portal, Stack, Text } from "@chakra-ui/react";
+import { Button, Center, Dialog, Field, Grid, IconButton, Input, Portal, Stack, Text, Tooltip } from "@chakra-ui/react";
 import { type AddCropResult, type CropIconKey, suggestCropIcon } from "@terranova/shared";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -102,6 +102,11 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
                   <Stack gap="1.5">
                     <Text textStyle="sm" fontWeight="medium">
                       {t("iconLabel")}
+                      {/* Tooltips don't reach touch screens, so the chosen one is named here too. */}
+                      <Text as="span" color="fg.muted" fontWeight="normal" data-chosen-icon-name>
+                        {" · "}
+                        {tIcons(icon)}
+                      </Text>
                     </Text>
                     <Grid
                       templateColumns="repeat(auto-fill, minmax(2.75rem, 1fr))"
@@ -113,18 +118,27 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
                       borderRadius="md"
                     >
                       {CROP_ICON_CHOICES.map((key) => (
-                        <IconButton
-                          key={key}
-                          type="button"
-                          size="md"
-                          data-icon-option={key}
-                          aria-label={tIcons(key)}
-                          aria-pressed={icon === key}
-                          variant={icon === key ? "subtle" : "ghost"}
-                          onClick={() => setChosenIcon(key)}
-                        >
-                          <CropIcon icon={key} boxSize="7" />
-                        </IconButton>
+                        <Tooltip.Root key={key} openDelay={200} closeDelay={0} lazyMount unmountOnExit>
+                          <Tooltip.Trigger asChild>
+                            <IconButton
+                              type="button"
+                              size="md"
+                              data-icon-option={key}
+                              aria-label={tIcons(key)}
+                              aria-pressed={icon === key}
+                              variant={icon === key ? "subtle" : "ghost"}
+                              onClick={() => setChosenIcon(key)}
+                            >
+                              <CropIcon icon={key} boxSize="7" />
+                            </IconButton>
+                          </Tooltip.Trigger>
+                          {/* In a portal, because the scrolling grid would clip it. */}
+                          <Portal>
+                            <Tooltip.Positioner>
+                              <Tooltip.Content>{tIcons(key)}</Tooltip.Content>
+                            </Tooltip.Positioner>
+                          </Portal>
+                        </Tooltip.Root>
                       ))}
                     </Grid>
                   </Stack>

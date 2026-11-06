@@ -82,8 +82,11 @@ test.describe("sections and crops", () => {
     await name.fill("처음보는작물");
     await expect(preview).toHaveAttribute("data-preview-icon", "sprout");
 
+    await page.locator('[data-icon-option="cherry"]').hover();
+    await expect(page.getByRole("tooltip")).toHaveText("체리");
     await page.locator('[data-icon-option="cherry"]').click();
     await expect(preview).toHaveAttribute("data-preview-icon", "cherry");
+    await expect(page.locator("[data-chosen-icon-name]")).toContainText("체리");
     await name.fill("도라지");
     await expect(preview).toHaveAttribute("data-preview-icon", "cherry");
 

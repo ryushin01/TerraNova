@@ -19,6 +19,7 @@ import {
   Status,
   Switch,
   Text,
+  VisuallyHidden,
 } from "@chakra-ui/react";
 import {
   type AutomationPauses,
@@ -34,6 +35,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import type { IconType } from "react-icons";
 import {
+  LuCheck,
   LuDroplets,
   LuEllipsisVertical,
   LuLightbulb,
@@ -206,7 +208,9 @@ export function ZoneCard({
   return (
     <Card.Root
       variant="elevated"
-      boxShadow={selected ? "inset 0 0 0 2px var(--chakra-colors-ink)" : "none"}
+      boxShadow="none"
+      bg={selected ? "brand.subtle" : undefined}
+      transition="background-color 0.15s"
       border="none"
       borderRadius="0"
       style={{ clipPath: chamfer() }}
@@ -232,6 +236,21 @@ export function ZoneCard({
                 <Checkbox.HiddenInput aria-label={t("selectZone", { zone: zoneName })} />
                 <Checkbox.Control />
               </Checkbox.Root>
+            )}
+            {selected && !selecting && (
+              <Flex
+                boxSize="5"
+                align="center"
+                justify="center"
+                flexShrink={0}
+                borderRadius="full"
+                bg="ink"
+                color="inkContrast"
+                data-selected-mark
+              >
+                <Icon as={LuCheck} boxSize="3.5" aria-hidden />
+                <VisuallyHidden>{t("zoneSelected")}</VisuallyHidden>
+              </Flex>
             )}
             <Card.Title fontWeight="800" fontSize="lg" letterSpacing="-0.01em">
               {t("zone", { id: zoneName })}
@@ -284,14 +303,7 @@ export function ZoneCard({
           </Stack>
 
           <Stack gap="3">
-            <Progress.Root
-              value={soil ?? null}
-              min={0}
-              max={100}
-              size="sm"
-              colorPalette="teal"
-              opacity={online ? 1 : 0.5}
-            >
+            <Progress.Root value={soil ?? null} min={0} max={100} size="sm" opacity={online ? 1 : 0.5}>
               <Flex justify="space-between" mb="1">
                 <Progress.Label textStyle="sm" fontWeight="normal" color="fg.muted">
                   <HStack gap="1.5">

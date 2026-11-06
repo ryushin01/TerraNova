@@ -125,6 +125,7 @@
     "selectModeOn": "Select zones",
     "selectModeOff": "Done selecting",
     "selectZone": "Select zone {zone}",
+    "zoneSelected": "Selected",
     "automation": "Automatic control",
     "automationOn": "Automatic",
     "automationPaused": "Manual setting held until {time} (automatic control paused)",

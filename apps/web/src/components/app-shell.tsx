@@ -38,13 +38,13 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
         boxSize="9"
         align="center"
         justify="center"
-        bg={inverted ? "#f3efee" : "ink"}
+        bg={inverted ? "#f2f2f2" : "ink"}
         color={inverted ? "#181818" : "inkContrast"}
         style={{ clipPath: chamfer("10px") }}
       >
         <Icon as={LuSprout} boxSize="5" aria-hidden />
       </Flex>
-      <Text fontSize="xl" fontWeight="800" letterSpacing="-0.02em" color={inverted ? "#f3efee" : "ink"}>
+      <Text fontSize="xl" fontWeight="800" letterSpacing="-0.02em" color={inverted ? "#f2f2f2" : "ink"}>
         TerraNova
       </Text>
     </HStack>
@@ -54,7 +54,7 @@ export function Logo({ inverted = false }: { inverted?: boolean }) {
 /** The drawer stays dark in either theme, so its plain buttons need their own colours. */
 const DRAWER_ACTION = {
   variant: "ghost",
-  color: "#f3efee",
+  color: "#f2f2f2",
   justifyContent: "flex-start",
   w: "full",
   minH: "11",
@@ -90,7 +90,7 @@ function NavLinks({ direction, onNavigate }: { direction: "row" | "column"; onNa
               minH="11"
               fontWeight="bold"
               textDecoration="none"
-              color={direction === "column" ? "#f3efee" : "ink"}
+              color={direction === "column" ? "#f2f2f2" : "ink"}
               fontSize={direction === "column" ? "xl" : "sm"}
               _hover={{ textDecoration: "underline" }}
               _focusVisible={{ outline: "2px solid", outlineColor: "currentColor", outlineOffset: "2px" }}
@@ -271,7 +271,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
         <Portal>
           <Drawer.Backdrop />
           <Drawer.Positioner>
-            <Drawer.Content maxW="72" bg="#181818" color="#f3efee">
+            <Drawer.Content maxW="72" bg="#181818" color="#f2f2f2">
               <Drawer.Header>
                 <Logo inverted />
               </Drawer.Header>

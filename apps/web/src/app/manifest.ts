@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "TerraNova",
     start_url: "/",
     display: "standalone",
-    background_color: "#f7f2f2",
+    background_color: "#f5f5f5",
     theme_color: "#181818",
     icons: [{ src: "/app-icon.svg", sizes: "any", type: "image/svg+xml" }],
   };
