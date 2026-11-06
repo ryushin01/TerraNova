@@ -38,6 +38,8 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
 
   // An edit starts from the crop's icon, so renaming doesn't swap it behind someone's back.
   useEffect(() => {
+    // A tooltip open as the dialog closes goes away without reporting it.
+    openTooltip.current = null;
     if (!open) return;
     reset({ name: editing?.name ?? "" });
     setChosenIcon(editing?.icon ?? null);

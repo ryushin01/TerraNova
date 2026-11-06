@@ -99,6 +99,23 @@ test.describe("sections and crops", () => {
     await expect(page.getByText("이미 있는 작물이에요")).toBeVisible();
     await page.getByRole("dialog").getByRole("button", { name: "취소" }).click();
 
+    // Saving with a tooltip open must not leave Escape blocked the next time the dialog opens.
+    await page.locator("[data-add-crop]").click();
+    await name.fill("툴팁작물");
+    const sprout = page.locator('[data-icon-option="sprout"]');
+    await expect(async () => {
+      await sprout.hover({ position: { x: 8, y: 8 } });
+      await sprout.hover({ position: { x: 16, y: 16 } });
+      await expect(page.getByRole("tooltip")).toHaveText("새싹", { timeout: 1000 });
+    }).toPass();
+    await name.press("Enter");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.mouse.move(0, 0);
+    await page.locator("[data-add-crop]").click();
+    await expect(name).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+
     await page.locator("[data-add-crop]").click();
     await name.fill("옥수수");
     await expect(preview).toHaveAttribute("data-preview-icon", "corn");
