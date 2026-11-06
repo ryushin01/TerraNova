@@ -45,8 +45,9 @@ export function AddCropDialog({ open, editing, onClose, onSubmit }: Props) {
     setChosenIcon(editing?.icon ?? null);
   }, [open, editing, reset]);
 
-  const icon = chosenIcon ?? suggestCropIcon(name);
   const trimmed = name.trim();
+  // With no name yet, the preview shows the tomato that the placeholder gives as its example.
+  const icon = chosenIcon ?? (trimmed ? suggestCropIcon(name) : "tomato");
 
   const close = () => {
     reset({ name: "" });
