@@ -137,7 +137,7 @@
     },
     "automationResume": "Resume automatic control",
     "overview": {
-      "fields": "{zones} zones · {crops} crops",
+      "fields": "{zones, plural, one {# zone} other {# zones}} · {crops, plural, one {# crop} other {# crops}}",
       "farmTime": "Farm time",
       "connected": "Live",
       "connecting": "Connecting",

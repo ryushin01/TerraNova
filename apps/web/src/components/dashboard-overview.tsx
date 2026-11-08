@@ -184,8 +184,10 @@ export function DashboardOverview({ connection, timeZone, cropCount, zones, cycl
   const disconnected = connection === "disconnected";
   const conditions = ZONE_IDS.map((id) => ({ id, ...zoneCondition(zones[id], cycles[id], disconnected) }));
 
-  const soilValues = ZONE_IDS.flatMap((id) => {
-    const soil = zones[id]?.online ? zones[id]?.telemetry?.soilMoisturePct : undefined;
+  // Like the map, these stop counting last-known values once the server connection is lost.
+  const onlineCount = conditions.filter(({ online }) => online).length;
+  const soilValues = conditions.flatMap(({ id, online }) => {
+    const soil = online ? zones[id]?.telemetry?.soilMoisturePct : undefined;
     return soil === undefined ? [] : [soil];
   });
   const averageSoil = soilValues.length
@@ -272,11 +274,7 @@ export function DashboardOverview({ connection, timeZone, cropCount, zones, cycl
           flex="1"
         >
           <Stack gap="0">
-            <Stat
-              icon={LuWifi}
-              label={t("summary.online")}
-              value={`${ZONE_IDS.filter((id) => zones[id]?.online).length}/${ZONE_IDS.length}`}
-            />
+            <Stat icon={LuWifi} label={t("summary.online")} value={`${onlineCount}/${ZONE_IDS.length}`} />
             <Stat icon={LuDroplets} label={t("summary.watering")} value={String(pumpingCount)} />
             <Stat icon={LuBellRing} label={t("summary.alarms")} value={String(alarmCount)} alert={alarmCount > 0} />
           </Stack>
