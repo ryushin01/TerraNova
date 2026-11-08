@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { createAdmin, expect, expectFitsScreen, Farm, signIn, test, useStack } from "./fixtures";
 import { WEB_PORT } from "./ports";
 
@@ -73,6 +74,45 @@ test.describe("screen sizes and languages", () => {
         .evaluate((list) => getComputedStyle(list).gridTemplateColumns.split(" ").length);
       expect(columns).toBe(2);
       await expectFitsScreen(page);
+    });
+  });
+
+  test.describe("the dashboard's panels", () => {
+    test.use({ viewport: { width: 1440, height: 900 } });
+
+    const box = async (page: Page, selector: string) => (await page.locator(selector).first().boundingBox())!;
+
+    test("the overview has one row, and the crops fill the rows below it", async ({ page }) => {
+      const farm = new Farm(page);
+      await farm.open();
+      await expect(page.getByRole("heading", { level: 1, name: "구역 현황" })).toBeVisible();
+
+      const map = page.locator("[data-zone-map]");
+      await expect(map).toHaveAttribute("aria-label", /A 구역 .+, F 구역 /);
+      await expect(page.locator("[data-map-tile]")).toHaveCount(6);
+      expect((await box(page, "[data-zone-map]")).y).toBeLessThan((await box(page, "[data-section]")).y);
+
+      // Two crops of two zones share a row, and the third takes the whole next one.
+      const [first, second, third] = await Promise.all(
+        [0, 1, 2].map(async (index) => (await page.locator("[data-section]").nth(index).boundingBox())!),
+      );
+      expect(second!.y).toBe(first!.y);
+      expect(third!.y).toBeGreaterThan(first!.y);
+      expect(Math.round(third!.width)).toBe(Math.round(second!.x + second!.width - first!.x));
+      await expectFitsScreen(page);
+    });
+
+    test("the map shows a zone's state, and the current page stands out in the menu", async ({ page }) => {
+      const farm = new Farm(page);
+      await farm.open();
+      await stack.triggerAlarm("zone-b");
+      await expect(page.locator('[data-map-tile="zone-b"]')).toHaveAttribute("data-map-look", "alarm");
+      await expect(page.locator("[data-zone-map]")).toHaveAttribute("aria-label", /B 구역 알람 발송/);
+
+      const current = farm.navLink("구역 현황");
+      await expect(current).toHaveAttribute("aria-current", "page");
+      await expect(current).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      await expect(farm.navLink("센서 이력")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     });
   });
 

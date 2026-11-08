@@ -9,6 +9,7 @@ import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Logo } from "./app-shell";
 import { CropIcon } from "./crops";
+import { Contours } from "./panel";
 import { MAIN_ID } from "./skip-link";
 
 const HERO_CROPS: CropIconKey[] = ["tomato", "corn", "flower", "wheat", "carrot", "leaf"];
@@ -26,6 +27,7 @@ function AuthCard({ title, description, children }: { title: string; description
         position="relative"
         overflow="hidden"
       >
+        <Contours inset="0" opacity={0.1} />
         <Logo />
         {/* A thin cut-corner frame around the crops: decoration only. */}
         <Box position="absolute" top="14%" right="6%" w="62%" h="56%" aria-hidden>
