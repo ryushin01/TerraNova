@@ -17,6 +17,22 @@ export const system = createSystem(
         fonts: {
           heading: { value: "var(--font-pretendard), system-ui, sans-serif" },
           body: { value: "var(--font-pretendard), system-ui, sans-serif" },
+          // The system's own monospace: captions are Latin and digits, so no extra download.
+          mono: { value: 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace' },
+        },
+      },
+      textStyles: {
+        // Small survey-map captions on panels and rules.
+        caption: {
+          value: {
+            fontFamily: "mono",
+            fontSize: "xs",
+            lineHeight: "1.4",
+            letterSpacing: "0.06em",
+            // Monospace spaces look too wide next to Korean.
+            wordSpacing: "-0.25em",
+            textTransform: "uppercase",
+          },
         },
       },
       recipes: {
@@ -43,6 +59,13 @@ export const system = createSystem(
           surface: { value: { _light: "white", _dark: "#212121" } },
           ink: { value: { _light: "#181818", _dark: "#f2f2f2" } },
           inkContrast: { value: { _light: "white", _dark: "#181818" } },
+          // The dashboard's overview panels stay dark in either theme.
+          night: {
+            bg: { value: { _light: "#181818", _dark: "#242424" } },
+            fg: { value: "#f2f2f2" },
+            muted: { value: "#ababab" },
+            line: { value: "rgba(255, 255, 255, 0.16)" },
+          },
           chart: {
             grid: { value: { _light: "#e8e8e8", _dark: "#363636" } },
             axis: { value: { _light: "#707070", _dark: "#9e9e9e" } },

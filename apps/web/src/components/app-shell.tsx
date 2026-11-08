@@ -26,6 +26,7 @@ import { LuChevronDown, LuLanguages, LuMenu, LuMoon, LuSprout, LuSun } from "rea
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { ChangePasswordDialog } from "./change-password-dialog";
+import { ScaleRule } from "./panel";
 import { MAIN_ID } from "./skip-link";
 import { chamfer } from "./theme";
 import { toaster } from "./toaster";
@@ -75,8 +76,17 @@ function NavLinks({ direction, onNavigate }: { direction: "row" | "column"; onNa
     { href: "/users", label: t("users"), show: role === "admin" },
   ];
 
+  const row = direction === "row";
+
   return (
-    <Flex as="nav" direction={direction} gap={direction === "row" ? "8" : "2"} aria-label={t("navigation")}>
+    <Flex
+      as="nav"
+      direction={direction}
+      gap={row ? "0" : "2"}
+      bg={row ? "surface" : undefined}
+      borderRadius={row ? "full" : undefined}
+      aria-label={t("navigation")}
+    >
       {items
         .filter((item) => item.show)
         .map((item) => {
@@ -89,15 +99,18 @@ function NavLinks({ direction, onNavigate }: { direction: "row" | "column"; onNa
               alignItems="center"
               gap="2"
               minH="11"
+              px={row ? "5" : undefined}
+              borderRadius={row ? "full" : undefined}
               fontWeight="bold"
               textDecoration="none"
-              color={direction === "column" ? "#f2f2f2" : "ink"}
-              fontSize={direction === "column" ? "xl" : "sm"}
+              bg={row && active ? "ink" : undefined}
+              color={!row ? "#f2f2f2" : active ? "inkContrast" : "ink"}
+              fontSize={row ? "sm" : "xl"}
               _hover={{ textDecoration: "underline" }}
-              _focusVisible={{ outline: "2px solid", outlineColor: "currentColor", outlineOffset: "2px" }}
+              _focusVisible={{ outline: "2px solid", outlineColor: row ? "ink" : "currentColor", outlineOffset: "2px" }}
             >
               <Link href={item.href} aria-current={active ? "page" : undefined} onClick={onNavigate}>
-                {active && <Box boxSize="1.5" borderRadius="full" bg="currentColor" aria-hidden />}
+                {!row && active && <Box boxSize="1.5" borderRadius="full" bg="currentColor" aria-hidden />}
                 {item.label}
               </Link>
             </ChakraLink>
@@ -133,8 +146,11 @@ function ThemeToggle({ inDrawer = false }: { inDrawer?: boolean }) {
   );
 }
 
-/** The page frame: navigation across the top, or in a drawer on small screens, with the full width for content. */
-export function AppShell({ title, children }: { title: string; children: ReactNode }) {
+/**
+ * The page frame: navigation across the top, or in a drawer on small screens, with the full width for content.
+ * A page without a `title` puts its own h1 in its content.
+ */
+export function AppShell({ title, children }: { title?: string; children: ReactNode }) {
   const t = useTranslations("nav");
   const tRoles = useTranslations("roles");
   const tDash = useTranslations("dashboard");
@@ -171,15 +187,18 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
   const role = session?.user.role;
 
   return (
-    <Box minH="100dvh" px={{ base: "4", md: "8" }} pb="12">
-      <Flex as="header" align="center" justify="space-between" gap="4" py={{ base: "3", md: "5" }}>
-        <Logo />
-        <HStack gap={{ base: "1", md: "6" }} flexShrink={0}>
-          <Box hideBelow="lg">
-            <NavLinks direction="row" />
-          </Box>
+    <Box minH="100dvh" px={{ base: "3", md: "4" }} pb="8">
+      <Flex as="header" align="center" justify="space-between" gap="4" py="3">
+        {/* Equal sides keep the menu in the middle of the page, whatever the account name's length. */}
+        <Box flex={{ lg: "1 1 0" }} minW="0">
+          <Logo />
+        </Box>
+        <Box hideBelow="lg" flexShrink={0}>
+          <NavLinks direction="row" />
+        </Box>
+        <HStack gap={{ base: "1", md: "2" }} flex={{ lg: "1 1 0" }} justify="flex-end" flexShrink={0}>
           {/* A phone's header only has room for the essentials; these two move to the drawer there. */}
-          <HStack gap={{ base: "1", md: "6" }} hideBelow="sm">
+          <HStack gap={{ base: "1", md: "2" }} hideBelow="sm">
             <Button asChild variant="ghost" colorPalette="gray" size="sm" minH="11">
               <Link href={pathname} locale={otherLocale}>
                 <LuLanguages aria-hidden />
@@ -254,17 +273,21 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
       </Flex>
 
       <Box as="main" id={MAIN_ID} tabIndex={-1}>
-        <Heading
-          as="h1"
-          fontSize={{ base: "3xl", md: "5xl" }}
-          fontWeight="800"
-          letterSpacing="-0.025em"
-          lineHeight="1.1"
-          mt={{ base: "4", md: "8" }}
-          mb={{ base: "6", md: "10" }}
-        >
-          {title}
-        </Heading>
+        {title && (
+          <Box mt={{ base: "4", md: "6" }} mb={{ base: "6", md: "8" }}>
+            <Heading
+              as="h1"
+              fontSize={{ base: "3xl", md: "5xl" }}
+              fontWeight="300"
+              letterSpacing="-0.03em"
+              lineHeight="1.1"
+              mb="4"
+            >
+              {title}
+            </Heading>
+            <ScaleRule />
+          </Box>
+        )}
         {children}
       </Box>
 

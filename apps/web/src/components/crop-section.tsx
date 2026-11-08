@@ -45,7 +45,12 @@ interface Props {
   children: ReactNode;
 }
 
-/** One crop: its heading and controls, its alarm times, and its zones. */
+const ZONE_MIN_WIDTH = 300;
+const ZONE_GAP = 8;
+/** The panel's own padding and border on both sides. */
+const PANEL_PADDING = 36;
+
+/** One crop's panel: its heading and controls, its alarm times, and its zones. */
 export function CropSection({
   crop,
   name,
@@ -67,6 +72,9 @@ export function CropSection({
   children,
 }: Props) {
   const t = useTranslations("dashboard");
+  // Wide enough for its zones side by side; a row of panels then shares out the leftover space by zones.
+  const columns = Math.max(zoneCount, 1);
+  const basis = columns * ZONE_MIN_WIDTH + (columns - 1) * ZONE_GAP + PANEL_PADDING;
 
   return (
     <Stack
@@ -75,14 +83,14 @@ export function CropSection({
       data-drop-target={isDropTarget || undefined}
       aria-label={name}
       gap="3"
-      p="3"
-      // The drop outline sits outside the content, which stays aligned with the rest of the page.
-      mx="calc(var(--chakra-spacing-3) * -1 - 2px)"
-      borderRadius="lg"
+      p="4"
+      minW="0"
+      style={{ flex: `${columns} 1 min(100%, ${basis}px)` }}
+      borderRadius="2xl"
       borderWidth="2px"
       borderStyle="dashed"
       borderColor={isDropTarget ? "ink" : dragging ? "brand.emphasized" : "transparent"}
-      bg={isDropTarget ? "brand.subtle" : undefined}
+      bg={isDropTarget ? "brand.subtle" : "surface"}
     >
       <Flex align="center" justify="space-between" gap="2" wrap="wrap">
         <HStack gap="2">
@@ -183,12 +191,8 @@ export function CropSection({
         <Grid
           as="ul"
           listStyleType="none"
-          templateColumns={{
-            base: "1fr",
-            md: "repeat(auto-fill, minmax(340px, 1fr))",
-            xl: "repeat(auto-fill, minmax(480px, 1fr))",
-          }}
-          gap="2"
+          templateColumns={{ base: "1fr", md: `repeat(auto-fit, minmax(${ZONE_MIN_WIDTH}px, 1fr))` }}
+          gap={`${ZONE_GAP}px`}
         >
           {children}
         </Grid>

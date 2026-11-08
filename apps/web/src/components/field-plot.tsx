@@ -1,8 +1,13 @@
 "use client";
 
-import { Box, Grid, HStack, Text, Wrap } from "@chakra-ui/react";
-import { type CropIconKey, SOIL_SUFFICIENT_PCT, type WateringState } from "@terranova/shared";
-import { useTranslations } from "next-intl";
+import { Box, Grid } from "@chakra-ui/react";
+import {
+  type CropIconKey,
+  SOIL_SUFFICIENT_PCT,
+  type WateringCycle,
+  type WateringState,
+  type ZoneSnapshot,
+} from "@terranova/shared";
 import { memo } from "react";
 import { CropIcon } from "./crops";
 
@@ -25,11 +30,21 @@ export type FieldLook =
   | "problem"
   | "offline";
 
-const LEGEND: FieldLook[] = ["dry", "normal", "wet", "alarm", "pending", "watering", "completed", "problem", "offline"];
+export const LEGEND: FieldLook[] = [
+  "dry",
+  "normal",
+  "wet",
+  "alarm",
+  "pending",
+  "watering",
+  "completed",
+  "problem",
+  "offline",
+];
 
-const SOIL_DRY_BELOW = 40;
+export const SOIL_DRY_BELOW = 40;
 
-const ANIMATIONS: Partial<Record<FieldLook, string>> = {
+export const FIELD_ANIMATIONS: Partial<Record<FieldLook, string>> = {
   watering: "cellWater 1.4s ease-in-out infinite",
   alarm: "cellAlarm 1.2s ease-in-out infinite",
 };
@@ -53,6 +68,14 @@ export function fieldLook({ state, stopped, online, soil }: LookInput): FieldLoo
   return soil >= SOIL_SUFFICIENT_PCT ? "wet" : "normal";
 }
 
+/** What a zone's device and watering cycle add up to, shared by its card and the overview map. */
+export function zoneCondition(zone: ZoneSnapshot | undefined, cycle: WateringCycle | undefined, disconnected: boolean) {
+  const online = !disconnected && !!zone?.online;
+  const stopped = cycle?.state === "completed" && cycle.reason === "stopped_by_command";
+  const look = fieldLook({ state: cycle?.state, stopped, online, soil: zone?.telemetry?.soilMoisturePct });
+  return { online, stopped, look, stateKey: stopped ? "stopped" : (cycle?.state ?? "idle") };
+}
+
 interface FieldPlotProps {
   look: FieldLook;
   label: string;
@@ -60,7 +83,7 @@ interface FieldPlotProps {
 }
 
 export const FieldPlot = memo(function FieldPlot({ look, label, icon }: FieldPlotProps) {
-  const animation = ANIMATIONS[look];
+  const animation = FIELD_ANIMATIONS[look];
   return (
     <Grid
       role="img"
@@ -84,25 +107,9 @@ export const FieldPlot = memo(function FieldPlot({ look, label, icon }: FieldPlo
           justifyContent="center"
           style={animation ? { animationDelay: `${cell.delayMs}ms` } : undefined}
         >
-          {icon && <CropIcon icon={icon} boxSize="52%" opacity={0.75} />}
+          {icon && <CropIcon icon={icon} mono boxSize="60%" />}
         </Box>
       ))}
     </Grid>
   );
 });
-
-export function FieldLegend() {
-  const t = useTranslations("dashboard");
-  return (
-    <Wrap gap="3" aria-label={t("legendTitle")}>
-      {LEGEND.map((look) => (
-        <HStack key={look} gap="1.5">
-          <Box boxSize="3" bg={`field.${look}`} />
-          <Text textStyle="xs" color="fg.muted">
-            {t(`legend.${look}`)}
-          </Text>
-        </HStack>
-      ))}
-    </Wrap>
-  );
-}

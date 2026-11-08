@@ -1,19 +1,6 @@
 "use client";
 
-import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Dialog,
-  Flex,
-  HStack,
-  Menu,
-  Portal,
-  SimpleGrid,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { Alert, Badge, Box, Button, Dialog, Flex, HStack, Menu, Portal, Stack, Text } from "@chakra-ui/react";
 import {
   BUILTIN_CROP_NAMES,
   type ConfirmResult,
@@ -25,9 +12,9 @@ import {
   type ManualActuator,
   ZONE_IDS,
 } from "@terranova/shared";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { LuBellRing, LuDroplets, LuPlus, LuSprout, LuWifi } from "react-icons/lu";
+import { LuPlus } from "react-icons/lu";
 import { useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { AddCropDialog } from "./add-crop-dialog";
@@ -36,9 +23,8 @@ import { AlarmTimesDialog } from "./alarm-times-dialog";
 import { AutomationDialog } from "./automation-dialog";
 import { CropSection } from "./crop-section";
 import { CropIcon } from "./crops";
-import { FieldLegend } from "./field-plot";
+import { DashboardOverview } from "./dashboard-overview";
 import { SelectionBar } from "./selection-bar";
-import { SummaryTile } from "./summary-tile";
 import { toaster } from "./toaster";
 import { useFarm } from "./use-farm";
 import { useFieldSelection } from "./use-field-selection";
@@ -46,7 +32,6 @@ import { ZoneCard, zoneLetter } from "./zone-card";
 
 export function Dashboard() {
   const t = useTranslations("dashboard");
-  const format = useFormatter();
   const router = useRouter();
   const { data: session, isPending: sessionPending } = authClient.useSession();
   const tCrops = useTranslations("crops");
@@ -105,14 +90,6 @@ export function Dashboard() {
     const state = cycles[id]?.state;
     return zones[id]?.telemetry?.actuators.pump || state === "command_sent" || state === "watering";
   });
-
-  const soilValues = ZONE_IDS.flatMap((id) => {
-    const soil = zones[id]?.online ? zones[id]?.telemetry?.soilMoisturePct : undefined;
-    return soil === undefined ? [] : [soil];
-  });
-  const averageSoil = soilValues.length
-    ? `${format.number(soilValues.reduce((total, soil) => total + soil, 0) / soilValues.length, { maximumFractionDigits: 0 })}%`
-    : "–";
 
   /** Runs one control at a time per key, so a double tap can't send it twice. */
   const run = async (key: string, action: () => Promise<ConfirmResult | ControlResult>) => {
@@ -231,7 +208,7 @@ export function Dashboard() {
   };
 
   return (
-    <Stack gap="6">
+    <Stack gap="2">
       {connection === "disconnected" && (
         <Alert.Root status="error">
           <Alert.Indicator />
@@ -262,21 +239,15 @@ export function Dashboard() {
         onStop={(zoneId) => run(`stop:${zoneId}`, () => stopPump(zoneId))}
       />
 
-      <SimpleGrid columns={{ base: 2, md: 4 }} gap="2">
-        <SummaryTile
-          icon={LuWifi}
-          label={t("summary.online")}
-          value={`${ZONE_IDS.filter((id) => zones[id]?.online).length} / ${ZONE_IDS.length}`}
-        />
-        <SummaryTile icon={LuDroplets} label={t("summary.watering")} value={String(pumping.length)} />
-        <SummaryTile
-          dark={alarms.length > 0}
-          icon={LuBellRing}
-          label={t("summary.alarms")}
-          value={String(alarms.length)}
-        />
-        <SummaryTile icon={LuSprout} label={t("summary.soil")} value={averageSoil} />
-      </SimpleGrid>
+      <DashboardOverview
+        connection={connection}
+        timeZone={timeZone}
+        cropCount={crops.length}
+        zones={zones}
+        cycles={cycles}
+        pumpingCount={pumping.length}
+        alarmCount={alarms.length}
+      />
 
       {allowed && (
         <Flex justify="space-between" align="center" gap="3" wrap="wrap">
@@ -303,61 +274,65 @@ export function Dashboard() {
         </Flex>
       )}
 
-      {crops.map((crop, index) => {
-        const members = zonesIn(crop.id);
-        return (
-          <CropSection
-            key={crop.id}
-            crop={crop}
-            name={cropName(crop)}
-            zoneCount={members.length}
-            isFirst={index === 0}
-            isLast={index === crops.length - 1}
-            dragging={!!pointer}
-            isDropTarget={dropTarget === crop.id && !!pointer}
-            allowed={allowed}
-            connected={connected}
-            controlItems={bulkControlItems(members)}
-            onEdit={() => setEditingCrop(crop)}
-            onEditRules={() => setEditingRules(crop)}
-            onEditTimes={() => setEditingTimes({ id: crop.id, name: cropName(crop), times: crop.alarmTimes })}
-            onMove={(step) => moveSection(crop, step)}
-            onRemove={() => handleRemoveCrop(crop)}
-            onWater={() => askToWater(members, t("sectionWaterTitle", { section: cropName(crop) }))}
-            onApply={(value) => applyBulk(members, value)}
-          >
-            {members.map((zoneId) => (
-              <li key={zoneId}>
-                <ZoneCard
-                  zoneId={zoneId}
-                  crop={crop}
-                  selected={selected.has(zoneId)}
-                  selecting={selecting}
-                  pauses={automationPauses}
-                  timeZone={timeZone}
-                  onToggleSelect={() => toggle(zoneId)}
-                  dragging={!!pointer && selected.has(zoneId)}
-                  group={selected.has(zoneId) && selectedIds.length > 1 ? selectedIds : null}
-                  bulkItems={bulkControlItems}
-                  moveItems={moveItems}
-                  zone={zones[zoneId]}
-                  cycle={cycles[zoneId]}
-                  disconnected={connection === "disconnected"}
-                  allowed={allowed}
-                  pending={pending}
-                  onResume={(actuator) => run(`resume:${zoneId}:${actuator}`, () => resumeAutomation(zoneId, actuator))}
-                  onWater={() => run(`water:${zoneId}`, () => startWatering(zoneId))}
-                  onWaterGroup={(ids) => askToWater(ids, t("selectionWaterTitle", { count: ids.length }))}
-                  onBulk={applyBulk}
-                  onStop={() => run(`stop:${zoneId}`, () => stopPump(zoneId))}
-                  onMove={(target) => run(`move:${zoneId}`, () => moveZones([zoneId], target))}
-                  onSwitch={(actuator, on) => run(`${zoneId}:${actuator}`, () => setActuator(zoneId, actuator, on))}
-                />
-              </li>
-            ))}
-          </CropSection>
-        );
-      })}
+      <Flex wrap="wrap" gap="2">
+        {crops.map((crop, index) => {
+          const members = zonesIn(crop.id);
+          return (
+            <CropSection
+              key={crop.id}
+              crop={crop}
+              name={cropName(crop)}
+              zoneCount={members.length}
+              isFirst={index === 0}
+              isLast={index === crops.length - 1}
+              dragging={!!pointer}
+              isDropTarget={dropTarget === crop.id && !!pointer}
+              allowed={allowed}
+              connected={connected}
+              controlItems={bulkControlItems(members)}
+              onEdit={() => setEditingCrop(crop)}
+              onEditRules={() => setEditingRules(crop)}
+              onEditTimes={() => setEditingTimes({ id: crop.id, name: cropName(crop), times: crop.alarmTimes })}
+              onMove={(step) => moveSection(crop, step)}
+              onRemove={() => handleRemoveCrop(crop)}
+              onWater={() => askToWater(members, t("sectionWaterTitle", { section: cropName(crop) }))}
+              onApply={(value) => applyBulk(members, value)}
+            >
+              {members.map((zoneId) => (
+                <li key={zoneId}>
+                  <ZoneCard
+                    zoneId={zoneId}
+                    crop={crop}
+                    selected={selected.has(zoneId)}
+                    selecting={selecting}
+                    pauses={automationPauses}
+                    timeZone={timeZone}
+                    onToggleSelect={() => toggle(zoneId)}
+                    dragging={!!pointer && selected.has(zoneId)}
+                    group={selected.has(zoneId) && selectedIds.length > 1 ? selectedIds : null}
+                    bulkItems={bulkControlItems}
+                    moveItems={moveItems}
+                    zone={zones[zoneId]}
+                    cycle={cycles[zoneId]}
+                    disconnected={connection === "disconnected"}
+                    allowed={allowed}
+                    pending={pending}
+                    onResume={(actuator) =>
+                      run(`resume:${zoneId}:${actuator}`, () => resumeAutomation(zoneId, actuator))
+                    }
+                    onWater={() => run(`water:${zoneId}`, () => startWatering(zoneId))}
+                    onWaterGroup={(ids) => askToWater(ids, t("selectionWaterTitle", { count: ids.length }))}
+                    onBulk={applyBulk}
+                    onStop={() => run(`stop:${zoneId}`, () => stopPump(zoneId))}
+                    onMove={(target) => run(`move:${zoneId}`, () => moveZones([zoneId], target))}
+                    onSwitch={(actuator, on) => run(`${zoneId}:${actuator}`, () => setActuator(zoneId, actuator, on))}
+                  />
+                </li>
+              ))}
+            </CropSection>
+          );
+        })}
+      </Flex>
 
       <Dialog.Root
         role="alertdialog"
@@ -454,8 +429,6 @@ export function Dashboard() {
         onWater={() => askToWater(selectedIds, t("selectionWaterTitle", { count: selectedIds.length }))}
         onApply={(value) => applyBulk(selectedIds, value)}
       />
-
-      <FieldLegend />
     </Stack>
   );
 }

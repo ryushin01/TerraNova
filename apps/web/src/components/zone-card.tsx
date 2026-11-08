@@ -44,7 +44,7 @@ import {
   LuWaves,
   LuWind,
 } from "react-icons/lu";
-import { FieldPlot, fieldLook } from "./field-plot";
+import { FieldPlot, zoneCondition } from "./field-plot";
 import { chamfer } from "./theme";
 
 const STATE_COLORS: Record<WateringState, string> = {
@@ -115,13 +115,11 @@ export function ZoneCard({
   const t = useTranslations("dashboard");
   const format = useFormatter();
   const telemetry = zone?.telemetry;
-  const online = !disconnected && !!zone?.online;
+  const { online, stopped, look, stateKey } = zoneCondition(zone, cycle, disconnected);
   // Until the first snapshot arrives the zone's condition is simply unknown, not offline.
   const showOffline = disconnected || (!!zone && !zone.online);
 
-  const stopped = cycle?.state === "completed" && cycle.reason === "stopped_by_command";
   const palette = !cycle || stopped ? "gray" : STATE_COLORS[cycle.state];
-  const stateKey = stopped ? "stopped" : (cycle?.state ?? "idle");
   const stateLabel = t(`state.${stateKey}`);
   const reasonKey = `reason.${cycle?.reason}`;
   const showReason =
@@ -130,7 +128,6 @@ export function ZoneCard({
   const value = (number: number | undefined, unit: string) =>
     number === undefined ? "–" : `${format.number(number, { maximumFractionDigits: 1 })}${unit}`;
   const soil = telemetry?.soilMoisturePct;
-  const look = fieldLook({ state: cycle?.state, stopped, online, soil });
   const zoneName = zoneLetter(zoneId);
   const pumping =
     !!telemetry?.actuators.pump ||
@@ -209,11 +206,13 @@ export function ZoneCard({
     <Card.Root
       variant="elevated"
       boxShadow="none"
-      bg={selected ? "brand.subtle" : undefined}
+      bg={selected ? "brand.muted" : "canvas"}
       transition="background-color 0.15s"
       border="none"
       borderRadius="0"
       style={{ clipPath: chamfer() }}
+      // The layout inside follows the card's width, which depends on the panel it landed in.
+      css={{ containerType: "inline-size" }}
       data-zone={zoneId}
       data-state={cycle?.state ?? "idle"}
       data-selected={selected || undefined}
@@ -285,7 +284,11 @@ export function ZoneCard({
           </HStack>
         </Flex>
 
-        <Grid templateColumns={{ base: "1fr", xl: "minmax(0, 1.15fr) minmax(0, 1fr)" }} gap="4">
+        <Grid
+          templateColumns="1fr"
+          gap="4"
+          css={{ "@container (min-width: 460px)": { gridTemplateColumns: "minmax(0, 1.15fr) minmax(0, 1fr)" } }}
+        >
           <Stack gap="2">
             {allowed ? (
               <Menu.Root lazyMount unmountOnExit onSelect={({ value }) => handleMenu(value)}>

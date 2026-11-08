@@ -135,7 +135,19 @@
       "alarms": "Waiting alarms",
       "soil": "Average soil moisture"
     },
-    "automationResume": "Resume automatic control"
+    "automationResume": "Resume automatic control",
+    "overview": {
+      "fields": "{zones} zones · {crops} crops",
+      "farmTime": "Farm time",
+      "connected": "Live",
+      "connecting": "Connecting",
+      "disconnected": "Disconnected",
+      "status": "Zone status",
+      "mapLabel": "Zone status map: {zones}",
+      "mapZone": "Zone {zone} {state}",
+      "dryLine": "Dry",
+      "enoughLine": "Enough"
+    }
   },
   "nav": {
     "skipToMain": "Skip to main content",
