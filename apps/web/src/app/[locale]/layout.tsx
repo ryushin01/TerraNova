@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
+import { Nanum_Gothic, Nanum_Gothic_Coding, Roboto, Roboto_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -14,12 +14,26 @@ interface Props {
   params: Promise<{ locale: string }>;
 }
 
-const pretendard = localFont({
-  src: "../../fonts/PretendardVariable.woff2",
-  variable: "--font-pretendard",
-  weight: "45 920",
+// Control screens read numbers first: Roboto and Nanum Gothic for text, Roboto Mono and Nanum Gothic Coding
+// so digits and times keep their columns. Korean fonts are split by character range, so only the
+// slices a screen uses are fetched (preload: false).
+const roboto = Roboto({ subsets: ["latin"], variable: "--font-roboto", display: "swap" });
+const nanumGothic = Nanum_Gothic({
+  subsets: ["latin"],
+  weight: ["400", "700", "800"],
+  variable: "--font-nanum-gothic",
   display: "swap",
+  preload: false,
 });
+const robotoMono = Roboto_Mono({ subsets: ["latin"], variable: "--font-roboto-mono", display: "swap" });
+const nanumGothicCoding = Nanum_Gothic_Coding({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-nanum-gothic-coding",
+  display: "swap",
+  preload: false,
+});
+const fontVariables = [roboto, nanumGothic, robotoMono, nanumGothicCoding].map((font) => font.variable).join(" ");
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
@@ -39,7 +53,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={pretendard.variable} suppressHydrationWarning>
+    <html lang={locale} className={fontVariables} suppressHydrationWarning>
       <body>
         <NextIntlClientProvider>
           <Provider>

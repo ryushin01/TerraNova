@@ -15,10 +15,20 @@ export const system = createSystem(
     theme: {
       tokens: {
         fonts: {
-          heading: { value: "var(--font-pretendard), system-ui, sans-serif" },
-          body: { value: "var(--font-pretendard), system-ui, sans-serif" },
-          // The system's own monospace: captions are Latin and digits, so no extra download.
-          mono: { value: 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace' },
+          // Fallbacks keep the plain, industrial look until the web fonts arrive or if they fail:
+          // each OS's Korean gothic, then its UI sans; numbers fall back to a system monospace.
+          heading: {
+            value:
+              'var(--font-roboto), var(--font-nanum-gothic), "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", system-ui, "Segoe UI", sans-serif',
+          },
+          body: {
+            value:
+              'var(--font-roboto), var(--font-nanum-gothic), "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans CJK KR", system-ui, "Segoe UI", sans-serif',
+          },
+          mono: {
+            value:
+              'var(--font-roboto-mono), var(--font-nanum-gothic-coding), ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "D2Coding", monospace',
+          },
         },
       },
       textStyles: {
