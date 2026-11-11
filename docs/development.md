@@ -106,4 +106,4 @@ bun run memory:web [라운드]             # Next.js 서버에 페이지 요청�
 
 - 작물 아이콘: 직접 그린 플랫 일러스트입니다. `apps/web/scripts/crop-art.ts`가 원본이고, `apps/web/scripts/crop-icons.ts`로 `public/crops`(파일마다 컬러 `#icon`과 단색 `#mono`)와 설치 아이콘 `public/app-icon.svg`를 생성합니다.
 - 화면 아이콘: [Lucide](https://lucide.dev) (ISC)
-- 글꼴: [Pretendard](https://github.com/orioncactus/pretendard) (OFL-1.1)
+- 글꼴: Roboto·나눔고딕(본문·제목), Roboto Mono·나눔고딕코딩(수치·시각). 모두 OFL-1.1이며 `next/font/google`이 빌드 때 받아 함께 배포합니다(실행 중에는 인터넷이 필요 없습니다).
