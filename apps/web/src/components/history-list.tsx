@@ -110,7 +110,7 @@ export function HistoryList() {
 
   const loadMore = async () => {
     // 새로 불러오는 중에는 이전 목록의 커서가 남아 있으므로 더 보기를 막습니다.
-    if (!nextBefore || state !== "ready") return;
+    if (!nextBefore || state === "loading") return;
     const id = request.current;
     setLoadingMore(true);
     const page = await fetchPage(nextBefore);
@@ -120,6 +120,8 @@ export function HistoryList() {
       setState(page);
       return;
     }
+    // 더 보기가 실패한 뒤 다시 눌러 성공하면 오류 안내를 걷습니다.
+    setState("ready");
     setEntries((current) => [...current, ...page.entries]);
     setNextBefore(page.nextBefore);
   };
@@ -274,7 +276,7 @@ export function HistoryList() {
           alignSelf="center"
           data-history-more
           loading={loadingMore}
-          disabled={state !== "ready"}
+          disabled={state === "loading"}
           onClick={loadMore}
         >
           {t("more")}
