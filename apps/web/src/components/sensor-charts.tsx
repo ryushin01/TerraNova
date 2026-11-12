@@ -198,21 +198,32 @@ export function SensorCharts() {
   const [failed, setFailed] = useState(false);
   const [showTable, setShowTable] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/sensors?zone=${zone}&range=${range}`);
-      if (!response.ok) throw new Error(String(response.status));
-      setSeries((await response.json()) as SensorSeries);
-      setFailed(false);
-    } catch {
-      setFailed(true);
-    }
-  }, [zone, range]);
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      try {
+        const response = await fetch(`/api/sensors?zone=${zone}&range=${range}`, { signal });
+        if (!response.ok) throw new Error(String(response.status));
+        const next = (await response.json()) as SensorSeries;
+        if (signal?.aborted) return;
+        setSeries(next);
+        setFailed(false);
+      } catch {
+        if (signal?.aborted) return;
+        setFailed(true);
+      }
+    },
+    [zone, range],
+  );
 
   useEffect(() => {
-    load();
-    const timer = setInterval(load, REFRESH_MS);
-    return () => clearInterval(timer);
+    // 구역·기간을 바꾸거나 화면을 떠나면 이전 요청을 취소해, 늦게 온 이전 구역의 값이 덮어쓰지 않게 한다.
+    const controller = new AbortController();
+    load(controller.signal);
+    const timer = setInterval(() => load(controller.signal), REFRESH_MS);
+    return () => {
+      clearInterval(timer);
+      controller.abort();
+    };
   }, [load]);
 
   const rows = useMemo(() => (series ? toRows(series) : []), [series]);

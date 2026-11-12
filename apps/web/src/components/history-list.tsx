@@ -3,7 +3,7 @@
 import { Alert, Badge, Button, Flex, NativeSelect, Spinner, Stack, Table, Text } from "@chakra-ui/react";
 import { BUILTIN_CROP_NAMES, HISTORY_ACTIONS, type HistoryEntry, type HistoryPage, ZONE_IDS } from "@terranova/shared";
 import { useFormatter, useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const PAGE_SIZE = 50;
 
@@ -81,9 +81,14 @@ export function HistoryList() {
     [zone, action],
   );
 
+  // 필터를 바꾸면 번호가 바뀐다. 늦게 온 이전 필터의 응답(더 보기 포함)은 버린다.
+  const request = useRef(0);
+
   const reload = useCallback(async () => {
+    const id = ++request.current;
     setState("loading");
     const page = await fetchPage();
+    if (id !== request.current) return;
     if (typeof page === "string") {
       setState(page);
       return;
@@ -96,12 +101,17 @@ export function HistoryList() {
 
   useEffect(() => {
     reload();
+    return () => {
+      request.current += 1;
+    };
   }, [reload]);
 
   const loadMore = async () => {
     if (!nextBefore) return;
+    const id = request.current;
     setLoadingMore(true);
     const page = await fetchPage(nextBefore);
+    if (id !== request.current) return;
     setLoadingMore(false);
     if (typeof page === "string") {
       setState(page);
