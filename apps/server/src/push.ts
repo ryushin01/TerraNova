@@ -1,6 +1,6 @@
 import type { WateringCycle } from "@terranova/shared";
 import { eq, inArray } from "drizzle-orm";
-import webpush from "web-push";
+import { sendNotification } from "web-push";
 import type { Database } from "./db";
 import { pushSubscriptions } from "./db/schema";
 
@@ -78,7 +78,7 @@ export class PushNotifier {
     this.send =
       send ??
       ((subscription, payload) =>
-        webpush.sendNotification(subscription, payload, {
+        sendNotification(subscription, payload, {
           TTL: MAX_AGE_SEC,
           vapidDetails: { subject: config.subject, publicKey: config.publicKey, privateKey: config.privateKey },
         }));
