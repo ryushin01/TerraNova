@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DEFAULT_MQTT_PORT, DEFAULT_SOCKET_PORT, normalizeAlarmTimes, SOIL_SUFFICIENT_PCT } from "@terranova/shared";
-import webpush from "web-push";
+import { generateVAPIDKeys } from "web-push";
 import { startApp } from "./app";
 import { createAuth } from "./auth";
 import { startBroker } from "./broker";
@@ -54,7 +54,7 @@ function loadPushKeys(): PushConfig {
   const path = `${dataDir}-push-keys.json`;
   if (!existsSync(path)) {
     mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, JSON.stringify(webpush.generateVAPIDKeys()), { mode: 0o600 });
+    writeFileSync(path, JSON.stringify(generateVAPIDKeys()), { mode: 0o600 });
   }
   const { publicKey, privateKey } = JSON.parse(readFileSync(path, "utf8")) as Record<string, string>;
   return { publicKey: publicKey!, privateKey: privateKey!, subject: "https://github.com/ryushin01/TerraNova" };

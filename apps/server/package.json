@@ -16,7 +16,7 @@
     "drizzle-orm": "^0.45.4",
     "mqtt": "^5.16.1",
     "socket.io": "^4.8.4",
-    "web-push": "^3.6.7"
+    "web-push": "^4.0.0"
   },
   "devDependencies": {
     "@types/web-push": "^3.6.4",
