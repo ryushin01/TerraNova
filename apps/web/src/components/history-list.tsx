@@ -87,6 +87,8 @@ export function HistoryList() {
   const reload = useCallback(async () => {
     const id = ++request.current;
     setState("loading");
+    // 진행 중이던 더 보기 응답은 버려지므로 버튼의 불러오는 중 표시도 여기서 끕니다.
+    setLoadingMore(false);
     const page = await fetchPage();
     if (id !== request.current) return;
     if (typeof page === "string") {
