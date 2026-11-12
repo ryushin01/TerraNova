@@ -89,6 +89,8 @@ export function HistoryList() {
     setState("loading");
     // 진행 중이던 더 보기 응답은 버려지므로 버튼의 불러오는 중 표시도 여기서 끕니다.
     setLoadingMore(false);
+    // 이전 목록의 커서는 새 필터에 맞지 않습니다. 새로 불러오기가 실패해도 다시 쓰지 않게 지웁니다.
+    setNextBefore(null);
     const page = await fetchPage();
     if (id !== request.current) return;
     if (typeof page === "string") {
