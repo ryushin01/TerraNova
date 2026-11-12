@@ -83,14 +83,17 @@ export function HistoryList() {
 
   // 필터를 바꾸면 번호가 바뀐다. 늦게 온 이전 필터의 응답(더 보기 포함)은 버린다.
   const request = useRef(0);
+  // 지금 커서(nextBefore)를 받은 필터
+  const filterKey = `${zone}\u0000${action}`;
+  const cursorFilter = useRef(filterKey);
 
   const reload = useCallback(async () => {
     const id = ++request.current;
     setState("loading");
     // 진행 중이던 더 보기 응답은 버려지므로 버튼의 불러오는 중 표시도 여기서 끕니다.
     setLoadingMore(false);
-    // 이전 목록의 커서는 새 필터에 맞지 않습니다. 새로 불러오기가 실패해도 다시 쓰지 않게 지웁니다.
-    setNextBefore(null);
+    // 필터가 바뀌었으면 이전 목록의 커서는 맞지 않으므로 지웁니다. 같은 필터를 새로고침하다 실패하면 이어 볼 수 있게 남깁니다.
+    if (cursorFilter.current !== filterKey) setNextBefore(null);
     const page = await fetchPage();
     if (id !== request.current) return;
     if (typeof page === "string") {
@@ -99,9 +102,10 @@ export function HistoryList() {
     }
     setEntries(page.entries);
     setNextBefore(page.nextBefore);
+    cursorFilter.current = filterKey;
     setTimeZone(page.timeZone);
     setState("ready");
-  }, [fetchPage]);
+  }, [fetchPage, filterKey]);
 
   useEffect(() => {
     reload();
