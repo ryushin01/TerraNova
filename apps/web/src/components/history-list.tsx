@@ -3,7 +3,7 @@
 import { Alert, Badge, Button, Flex, NativeSelect, Spinner, Stack, Table, Text } from "@chakra-ui/react";
 import { BUILTIN_CROP_NAMES, HISTORY_ACTIONS, type HistoryEntry, type HistoryPage, ZONE_IDS } from "@terranova/shared";
 import { useFormatter, useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const PAGE_SIZE = 50;
 
@@ -81,32 +81,53 @@ export function HistoryList() {
     [zone, action],
   );
 
+  // 필터를 바꾸면 번호가 바뀐다. 늦게 온 이전 필터의 응답(더 보기 포함)은 버린다.
+  const request = useRef(0);
+  // 지금 커서(nextBefore)를 받은 필터
+  const filterKey = `${zone}\u0000${action}`;
+  const cursorFilter = useRef(filterKey);
+
   const reload = useCallback(async () => {
+    const id = ++request.current;
     setState("loading");
+    // 진행 중이던 더 보기 응답은 버려지므로 버튼의 불러오는 중 표시도 여기서 끕니다.
+    setLoadingMore(false);
+    // 필터가 바뀌었으면 이전 목록의 커서는 맞지 않으므로 지웁니다. 같은 필터를 새로고침하다 실패하면 이어 볼 수 있게 남깁니다.
+    if (cursorFilter.current !== filterKey) setNextBefore(null);
     const page = await fetchPage();
+    if (id !== request.current) return;
     if (typeof page === "string") {
       setState(page);
       return;
     }
     setEntries(page.entries);
     setNextBefore(page.nextBefore);
+    cursorFilter.current = filterKey;
     setTimeZone(page.timeZone);
     setState("ready");
-  }, [fetchPage]);
+  }, [fetchPage, filterKey]);
 
   useEffect(() => {
     reload();
+    return () => {
+      request.current += 1;
+    };
   }, [reload]);
 
   const loadMore = async () => {
-    if (!nextBefore) return;
+    // 새로 불러오는 중에는 이전 목록의 커서가 남아 있으므로 더 보기를 막습니다.
+    if (!nextBefore || state === "loading") return;
+    const id = request.current;
     setLoadingMore(true);
     const page = await fetchPage(nextBefore);
+    if (id !== request.current) return;
     setLoadingMore(false);
     if (typeof page === "string") {
       setState(page);
       return;
     }
+    // 더 보기가 실패한 뒤 다시 눌러 성공하면 오류 안내를 걷습니다.
+    setState("ready");
     setEntries((current) => [...current, ...page.entries]);
     setNextBefore(page.nextBefore);
   };
@@ -256,7 +277,14 @@ export function HistoryList() {
       )}
 
       {nextBefore !== null && (
-        <Button variant="outline" alignSelf="center" data-history-more loading={loadingMore} onClick={loadMore}>
+        <Button
+          variant="outline"
+          alignSelf="center"
+          data-history-more
+          loading={loadingMore}
+          disabled={state === "loading"}
+          onClick={loadMore}
+        >
           {t("more")}
         </Button>
       )}
