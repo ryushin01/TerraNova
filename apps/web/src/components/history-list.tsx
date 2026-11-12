@@ -109,7 +109,8 @@ export function HistoryList() {
   }, [reload]);
 
   const loadMore = async () => {
-    if (!nextBefore) return;
+    // 새로 불러오는 중에는 이전 목록의 커서가 남아 있으므로 더 보기를 막습니다.
+    if (!nextBefore || state !== "ready") return;
     const id = request.current;
     setLoadingMore(true);
     const page = await fetchPage(nextBefore);
@@ -268,7 +269,14 @@ export function HistoryList() {
       )}
 
       {nextBefore !== null && (
-        <Button variant="outline" alignSelf="center" data-history-more loading={loadingMore} onClick={loadMore}>
+        <Button
+          variant="outline"
+          alignSelf="center"
+          data-history-more
+          loading={loadingMore}
+          disabled={state !== "ready"}
+          onClick={loadMore}
+        >
           {t("more")}
         </Button>
       )}
