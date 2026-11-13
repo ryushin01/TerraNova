@@ -109,19 +109,23 @@ export function createRequestHandler({
     }
   };
 
+  /** The signed-in person's session, or null after answering 401. Reads only, so the session isn't refreshed. */
+  const requireSession = async (req: IncomingMessage, res: ServerResponse) => {
+    const current = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+      query: { disableRefresh: true },
+    });
+    if (!current) res.writeHead(401).end();
+    return current;
+  };
+
   const handleHistory = async (req: IncomingMessage, res: ServerResponse, query: URLSearchParams) => {
     if (req.method !== "GET") {
       res.writeHead(405).end();
       return;
     }
-    const current = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-      query: { disableRefresh: true },
-    });
-    if (!current) {
-      res.writeHead(401).end();
-      return;
-    }
+    const current = await requireSession(req, res);
+    if (!current) return;
     if (!canControl(current.user.role)) {
       res.writeHead(403).end();
       return;
@@ -153,14 +157,8 @@ export function createRequestHandler({
       res.writeHead(405).end();
       return;
     }
-    const current = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-      query: { disableRefresh: true },
-    });
-    if (!current) {
-      res.writeHead(401).end();
-      return;
-    }
+    const current = await requireSession(req, res);
+    if (!current) return;
     const zoneId = query.get("zone");
     const range = query.get("range");
     if (!isZoneId(zoneId ?? undefined) || !isSensorRange(range)) {
@@ -185,14 +183,8 @@ export function createRequestHandler({
       res.writeHead(404).end();
       return;
     }
-    const current = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-      query: { disableRefresh: true },
-    });
-    if (!current) {
-      res.writeHead(401).end();
-      return;
-    }
+    const current = await requireSession(req, res);
+    if (!current) return;
     if (path === "/api/push/key" && req.method === "GET") {
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ publicKey: push.publicKey }));

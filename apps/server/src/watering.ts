@@ -48,7 +48,7 @@ const CYCLE_RETENTION_DAYS = 90;
 
 const iso = (date: Date | null) => date?.toISOString() ?? null;
 
-export function toCycleDto(row: WateringCycleRow): WateringCycle {
+function toCycleDto(row: WateringCycleRow): WateringCycle {
   return {
     id: row.id,
     zoneId: row.zoneId,
