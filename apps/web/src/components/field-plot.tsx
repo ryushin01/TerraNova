@@ -57,7 +57,7 @@ interface LookInput {
 }
 
 /** A device-reported cycle outranks soil moisture, and being offline hides stale soil colors. */
-export function fieldLook({ state, stopped, online, soil }: LookInput): FieldLook {
+function fieldLook({ state, stopped, online, soil }: LookInput): FieldLook {
   if (state === "watering") return "watering";
   if (state === "alarm_sent") return "alarm";
   if (state === "confirmed" || state === "command_sent") return "pending";
