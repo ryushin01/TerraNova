@@ -94,3 +94,14 @@ e2e              브라우저 테스트, 메모리 측정, 스크린샷
 | [네트워크 모드](docs/network.md) | 휴대폰과 태블릿 접속, 신뢰된 인증서로 웹 푸시 켜기 |
 | [개발 가이드](docs/development.md) | 명령, 구조, 환경 변수, 데이터, 테스트, 메모리 측정 |
 | [시퀀스 다이어그램](docs/sequence-diagrams.md) | 정시 알람과 확인 후 급수, 센서 값과 자동 제어 |
+
+## 출처
+
+| 자료 | 저작자 | 사용 허락 | 원본 |
+|---|---|---|---|
+| Nanum Gothic(나눔고딕) 글꼴 | NHN(네이버), 디자인 산돌커뮤니케이션 | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Nanum+Gothic) |
+| Nanum Gothic Coding(나눔고딕코딩) 글꼴 | NHN(네이버), 디자인 산돌커뮤니케이션 | SIL OFL 1.1 | [Google Fonts](https://fonts.google.com/specimen/Nanum+Gothic+Coding) |
+| Roboto 글꼴 | The Roboto Project Authors | SIL OFL 1.1 | [googlefonts/roboto-classic](https://github.com/googlefonts/roboto-classic) |
+| Roboto Mono 글꼴 | The Roboto Mono Project Authors | SIL OFL 1.1 | [googlefonts/robotomono](https://github.com/googlefonts/robotomono) |
+
+작물 아이콘은 `scripts/crop-art.ts`로 직접 그렸습니다.
