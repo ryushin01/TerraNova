@@ -104,4 +104,4 @@ e2e              브라우저 테스트, 메모리 측정, 스크린샷
 | Roboto 글꼴 | The Roboto Project Authors | SIL OFL 1.1 | [googlefonts/roboto-classic](https://github.com/googlefonts/roboto-classic) |
 | Roboto Mono 글꼴 | The Roboto Mono Project Authors | SIL OFL 1.1 | [googlefonts/robotomono](https://github.com/googlefonts/robotomono) |
 
-작물 아이콘은 `scripts/crop-art.ts`로 직접 그렸습니다.
+작물 아이콘은 `apps/web/scripts/crop-art.ts`로 직접 그렸습니다.
