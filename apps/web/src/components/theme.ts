@@ -1,4 +1,5 @@
 import { createSystem, defaultConfig, defineConfig } from "@chakra-ui/react";
+import { nativeSelectAnatomy } from "@chakra-ui/react/anatomy";
 
 /** A corner cut on the diagonal: the shape running through the whole interface. */
 export const chamfer = (size = "24px") =>
@@ -47,6 +48,23 @@ export const system = createSystem(
       },
       recipes: {
         button: { base: { borderRadius: "full", fontWeight: "bold" } },
+      },
+      slotRecipes: {
+        // A select's arrow sits as far from the right edge as its text does from the left (1px
+        // border + start padding). Chakra's chevron has empty space around it, 5/24 of its size
+        // (1em of the indicator), so that space comes off the inset. Paddings follow Chakra's sizes.
+        nativeSelect: {
+          slots: nativeSelectAnatomy.keys(),
+          variants: {
+            size: {
+              xs: { indicator: { insetEnd: "calc(1px + 0.5rem - 1em * 5 / 24)" } },
+              sm: { indicator: { insetEnd: "calc(1px + 0.625rem - 1em * 5 / 24)" } },
+              md: { indicator: { insetEnd: "calc(1px + 0.75rem - 1em * 5 / 24)" } },
+              lg: { indicator: { insetEnd: "calc(1px + 1rem - 1em * 5 / 24)" } },
+              xl: { indicator: { insetEnd: "calc(1px + 1.125rem - 1em * 5 / 24)" } },
+            },
+          },
+        },
       },
       keyframes: {
         cellWater: {
