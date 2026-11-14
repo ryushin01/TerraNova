@@ -13,6 +13,7 @@ import {
   HStack,
   Icon,
   IconButton,
+  Image,
   Menu,
   Portal,
   Stack,
@@ -22,7 +23,7 @@ import { canControl } from "@terranova/shared";
 import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { type ReactNode, useEffect, useState } from "react";
-import { LuChevronDown, LuLanguages, LuMenu, LuMoon, LuSprout, LuSun } from "react-icons/lu";
+import { LuChevronDown, LuLanguages, LuMenu, LuMoon, LuSun } from "react-icons/lu";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { authClient } from "@/lib/auth-client";
 import { ChangePasswordDialog } from "./change-password-dialog";
@@ -35,16 +36,8 @@ import { usePush } from "./use-push";
 export function Logo({ inverted = false }: { inverted?: boolean }) {
   return (
     <HStack gap="2.5">
-      <Flex
-        boxSize="9"
-        align="center"
-        justify="center"
-        bg={inverted ? "#f2f2f2" : "ink"}
-        color={inverted ? "#181818" : "inkContrast"}
-        style={{ clipPath: chamfer("10px") }}
-      >
-        <Icon as={LuSprout} boxSize="5" aria-hidden />
-      </Flex>
+      {/* The app icon (sprout and soil on white); the name beside it is the accessible text. */}
+      <Image src="/app-icon.svg" alt="" boxSize="9" flexShrink={0} style={{ clipPath: chamfer("10px") }} />
       <Text fontSize="xl" fontWeight="800" letterSpacing="-0.02em" color={inverted ? "#f2f2f2" : "ink"}>
         TerraNova
       </Text>

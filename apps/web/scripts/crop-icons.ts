@@ -1,5 +1,6 @@
 /**
- * Writes the crop artwork from crop-art.ts into public/crops, and the install icon built from the seedling.
+ * Writes the crop artwork from crop-art.ts into public/crops.
+ * The app icon (src/app/icon.svg, public/app-icon.svg and the PNGs) is the brand mark, kept as fixed files.
  * Run: bun scripts/crop-icons.ts
  */
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -25,9 +26,3 @@ for (const name of new Set(Object.values(CROP_ICON_FILES))) {
     `<svg xmlns="http://www.w3.org/2000/svg"><symbol id="icon" viewBox="${VIEW_BOX}">${colorArt(art(name))}</symbol><symbol id="mono" viewBox="${VIEW_BOX}">${monoArt(art(name))}</symbol></svg>\n`,
   );
 }
-
-// A launcher can put a transparent icon on any color, so this one brings its own background.
-writeFileSync(
-  join(import.meta.dir, "../public/app-icon.svg"),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VIEW_BOX}"><rect width="64" height="64" fill="#fff"/><g transform="translate(10 10) scale(.6875)">${colorArt(art("seedling"))}</g></svg>\n`,
-);
